@@ -1,0 +1,13 @@
+input:
+  - key: wikidata
+    src:
+      - host: .*
+        dir: 'src/main/resources/sample/demo'
+    filter: |-
+      wikidata.txt
+  - pattern: .*(wikidata).*
+    handler: delimHandlerHash
+job_sets:
+  - name: db_fill
+    jobs:
+      - databaseFiller2

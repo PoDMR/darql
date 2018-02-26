@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/enricopulatzo/logback-XSD/master/src/main/xsd/logback.xsd">
+	<!-- Changed to use System.getProperties() -->
+	<!--<property resource="com/gitlab/ctt/arq/local.prop" />-->
+
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<contextListener class="com.gitlab.ctt.arq.utilx.ConfigLog">
+		<!--<resetJUL>false</resetJUL>-->
+	</contextListener>
+
+	<appender name="FILE" class="ch.qos.logback.core.FileAppender">
+		<file>${arq.dir.log:-${java.io.tmpdir}}/app.log</file>
+		<encoder>
+			<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<!--<appender name="STATUS_FILE" class="ch.qos.logback.core.FileAppender">-->
+		<!--<file>${arq.dir.log:-${java.io.tmpdir}}/status.log</file>-->
+		<!--<encoder>-->
+			<!--&lt;!&ndash;<charset>UTF-8</charset>&ndash;&gt;-->
+			<!--<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>-->
+		<!--</encoder>-->
+	<!--</appender>-->
+
+	<logger name="STATUS" level="DEBUG">
+		<!--<appender-ref ref="STATUS_FILE" />-->
+	</logger>
+
+	<!--<logger name="ch.qos.logback" level="OFF" />-->
+	<logger name="com.gitlab.ctt" level="DEBUG"/>
+	<logger name="com.gitlab.ctt.arq.analysis.aspect.Deduplicator" level="TRACE"/>
+	<!--additivity="false" -->
+	<logger name="org.apache.jena.arq.info" level="ERROR"/>
+	<logger name="SPARQL" level="ERROR"/>
+
+	<!-- OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. -->
+	<root level="INFO">
+		<appender-ref ref="STDOUT" />
+		<appender-ref ref="FILE" />
+	</root>
+</configuration>

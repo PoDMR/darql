@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>SPARQL</title>
+
+
+<script type="text/javascript" charset="utf-8"
+	src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.js"></script>
+
+<script type="text/javascript" charset="utf-8"
+	src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"></script>
+
+<script type="text/javascript" charset="utf-8"
+	src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.6/ace.js"></script>
+<script type="text/javascript" charset="utf-8"
+	src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.6/ext-language_tools.js"></script>
+
+
+<script type="text/javascript"
+	src="https://golden-layout.com/files/v1.5.8/js/goldenlayout.min.js"></script>
+<link type="text/css" rel="stylesheet"
+	href="https://golden-layout.com/files/v1.5.8/css/goldenlayout-base.css" />
+
+<link type="text/css" rel="stylesheet"
+	href="https://golden-layout.com/files/v1.5.8/css/goldenlayout-light-theme.css" />
+
+<script type="text/javascript" charset="utf-8" src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/2.7.7/cytoscape.min.js"></script>
+
+
+<script type="text/javascript" charset="utf-8"
+	src="https://rawgit.com/cytoscape/cytoscape.js-cose-bilkent/7f7c15de840b3fe1150dcb5c133e87c8de947ca3/cytoscape-cose-bilkent.js"></script>
+
+<script type="text/javascript" charset="utf-8"
+	src="https://cdn.rawgit.com/RubenVerborgh/SPARQL.js/c334b580dc650137f5050233430afc7616bac638/sparqljs-browser.min.js"></script>
+<script type="text/javascript" charset="utf-8" src="require-ish.js"></script>
+<script type="text/javascript" charset="utf-8"
+	src="https://cdn.rawgit.com/RubenVerborgh/SPARQL.js/v1.3.0/lib/SparqlGenerator.js"></script>
+
+<link type="text/css" rel="stylesheet"
+	href="https://cdn.rawgit.com/ghinda/css-toggle-switch/9c7e7f167407d1ae07f660f62b4b4172ecd97ff8/dist/toggle-switch.css" />
+
+<script type="text/javascript" charset="utf-8" src="vue-golden-layout.js"></script>
+<script type="text/javascript" charset="utf-8" src="vue-ace-editor.js"></script>
+<script type="text/javascript" charset="utf-8" src="ace-editor-mode-sparql.js"></script>
+<script type="text/javascript" charset="utf-8" src="vue-cytoscape.js"></script>
+<script type="text/javascript" charset="utf-8" src="vue-drop-zone.js"></script>
+<script type="text/javascript" charset="utf-8" src="vue-tri-state.js"></script>
+<script type="text/javascript" charset="utf-8" src="sparql-graph.js"></script>
+<script type="text/javascript" charset="utf-8" src="db-api.js"></script>
+<script type="text/javascript" charset="utf-8" src="db-model.js"></script>
+
+<link type="text/css" rel="stylesheet" href="golden-layout-solarized.css" />
+<link type="text/css" rel="stylesheet" href="datatip.css" />
+
+<script type="text/javascript" charset="utf-8" src="vue-active-bar.js"></script>
+<link type="text/css" rel="stylesheet" href="active-bar.css" />
+
+<style type="text/css" media="screen">
+html, body {
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+}
+
+a {
+	color: #268bd2;
+}
+
+a:visited {
+	color: #6c71c4;
+}
+
+input {
+	color: #657b83;
+	background-color: #eee8d5;
+}
+
+.wrapper {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;  /* hide scrollbars!!! */
+}
+
+#cy {
+	background-color: #EDFFED;
+	width: 100%;
+	height: 100%;
+}
+
+.max {
+	width: 100%;
+	height: 100%;
+}
+
+.actions {
+	position: relative;
+	left: 0;
+	top: 0;
+	font-size: 16px;
+}
+.actions a {
+	margin: 10px 10px 10px 10px;
+}
+
+.data_table {
+	width: 100%;
+}
+.data_table td, .data_table th {
+	border: 1px solid #eee8d5;
+	text-align: left;
+	/*padding: 8px;*/
+	/*margin: 0px;*/
+}
+.data_table tr:nth-child(even) {
+	background-color: #eee8d5;
+}
+.data_table tr:hover {
+	/*color: #657b83;  !* base00 *!*/
+	color: #fdf6e3;  /* base3 */
+	background-color: #d33682;
+	cursor: pointer;
+}
+
+/* https://jsfiddle.net/M5cTN/ */
+.act_button {
+	position: absolute;
+	bottom: 0;
+	right: 0;
+	margin: 0 20px 20px 0;
+	padding: 12px 16px;
+	border-radius: 50%;
+	/*background-color: #4CAF50;*/
+	background-color: #2aa198;
+	color: #fdf6e3;
+	border: none;
+	cursor: pointer;
+	z-index: 5;
+}
+
+fieldset {
+	margin: 0;
+	border: 0;
+	padding: 0 10px 0 10px;
+}
+
+details {
+	border-radius: 12px;
+	border: 4px solid #eee8d5;
+	margin: 8px;
+	flex-grow: 1;
+}
+details div {
+	padding: 10px;
+}
+summary {
+	padding: 10px;
+	background: #eee8d5;
+}
+
+#data_sets td:nth-of-type(n+2) {
+	text-align: right;
+}
+
+.builderRow {
+	display: flex;
+}
+.builderRow > span {
+	flex: 1;
+}
+.builderRow > span > input {
+	width: 100%;
+}
+
+.switch-candy-yellow a {
+	background-color: #657b83;
+}
+.switch-candy input:checked + label {
+	color: #fdf6e3;
+}
+.switch-toggle.switch-candy,
+.switch-light.switch-candy > span {
+	background-color: #eee8d5;
+	border-radius: 3px;
+	/*box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3), 0 1px 0 rgba(255, 255, 255, 0.2);*/
+}
+.switch-toggle.switch-candy label {
+	color: #657b83;
+	text-shadow: none;
+}
+</style>
+
+</head>
+<body>
+
+<div id="app">
+	<vgl-root class="wrapper">
+		<vgl-column>
+			<vgl-component title="Graph">
+				<drop-zone ref="dropZone" class="max" :ondrop="onDrop">
+					<cytoscape ref="cyRef" id="cy" :oninit="initCy"></cytoscape>
+					<div class="actions" style="top: -100%">
+						<a href="javascript:" @click="nav_prev">&lt;&lt;</a>
+
+						<span>
+							<span data-tip="press ENTER to confirm goto">
+								<input id="numCurrent" size="2"
+									title="current" style="text-align: right;"
+									@keyup.enter="nav_goto"
+									v-model="currentQueryIndexStr">
+							</span>/{{queryData.length}}</span>
+						<a href="javascript:" @click="nav_next">&gt;&gt;</a>
+
+						<a href="javascript:"
+							@click="options.cy.invokeDownload()"
+						>save</a>
+						
+						
+						
+						<a href="javascript:"
+							@click="options.showEdgeLabels = !options.showEdgeLabels"
+							>showEdgeLabels: {{options.showEdgeLabels}}</a>
+						<a href="javascript:"
+							@click="options.showConstants = !options.showConstants"
+							>showConstants: {{options.showConstants}}</a>
+						<a href="javascript:"
+							@click="options.drawGraph = ((options.drawGraph == 'drawGraphHE') ?
+								'drawGraphReg' : 'drawGraphHE')"
+						>graph renderer: {{ (options.drawGraph == 'drawGraphHE') ?
+							'hypergraph' : 'regular' }}</a>
+						<a href="javascript:"
+							@click="sparqlGraph.nextLayout(1)"
+						>layout: {{ options.layout }}</a>
+					</div>
+				</drop-zone>
+			</vgl-component>
+			<vgl-row>
+				<vgl-column>
+					<vgl-component title="SPARQL">
+						<ace-editor ref="editor1">SELECT * WHERE { ?x ?p ?y }</ace-editor>
+					</vgl-component>
+
+					<vgl-component title="SQL">
+						<div class="max" data-tip-top-fade="press ctrl+enter to submit">
+							<ace-editor ref="editor2">SELECT 1;</ace-editor>
+						</div>
+						<input @click="executeQuery()"
+							type="button" class="act_button" value="▶">
+					</vgl-component>
+				</vgl-column>
+
+				<vgl-column>
+					<vgl-component title="Query Builder"
+						style="display: flex; flex-direction: column;">
+						<div class="actions">
+							<a href="javascript:" @click="fillAndExecuteQuery">Run</a>
+							
+							<a href="javascript:" @click="performReset">Reset</a>
+							<a href="javascript:" @click="performCount"
+								:data-tip-persistent="countResult">Count</a>
+
+							<span>Limit</span>
+							<input id="limit" v-model="sqlBuild.limit"
+								size="2" title="Limit" value="10">
+							<a href="javascript:" @click="offsetPrev">&lt&lt</a>
+							<span>Offset</span>
+							<input id="offset" v-model="sqlBuild.offset"
+									size="2" title="Offset" value="0">
+							<a href="javascript:" @click="offsetNext">&gt&gt</a>
+						</div>
+
+						<div style="overflow-y: auto; display: flex; flex-wrap: wrap;">
+							<details v-for="(groupObj, groupName) in DbModel.columnGroups">
+								<summary>{{ groupName }}</summary>
+								<div style="display: flex; flex-wrap: wrap;">
+									<tri-state v-for="key in groupObj" :ikey="key"
+										:boolval="sqlBuild.where[key]"
+										:label="DbModel.columnNameMap[key] ?
+											DbModel.columnNameMap[key] : key"
+										:onset="setWhere"></tri-state>
+								</div>
+							</details>
+
+							<details open style="width: 100%;">
+								<summary>values</summary>
+								<div>
+									<div class="builderRow">
+										<span>origin</span>
+										<span data-tip-top="use a pattern">
+											<input id="origin"
+												title="origin"
+												v-model="sqlBuild.origin">
+										</span>
+									</div>
+									<div class="builderRow">
+										<span>tripleCount</span>
+										<span data-tip-top="use a comma for lower/upper bound">
+											<input id="tripleCount"
+												title="tripleCount"
+												v-model="sqlBuild.tripleCount ">
+										</span>
+									</div>
+									<div class="builderRow">
+										<span>edgeCover</span>
+										<span data-tip-top="use a comma for lower/upper bound">
+											<input id="edgeCover"
+												title="edgeCover"
+												v-model="sqlBuild.edgeCover">
+										</span>
+									</div>
+									<div class="builderRow">
+										<span>hypertreeWidth</span>
+										<span data-tip-top="use a comma for lower/upper bound">
+											<input id="hypertreeWidth"
+												title="hypertreeWidth"
+												v-model="sqlBuild.hypertreeWidth">
+										</span>
+									</div>
+								</div>
+							</details>
+						</div>
+					</vgl-component>
+
+					<vgl-stack>
+						<vgl-component title="Data" style="overflow: auto;">
+							<table class="data_table" v-if="dataList">
+								<tr>
+									<th v-for="(col, cIndex) in dataList[0]"
+										:key="cIndex">{{ cIndex }}</th>
+								</tr>
+								<tr v-for="(row, rIndex) in dataList" :key="rIndex">
+									<td v-for="(col, cIndex) in row"
+										@click="currentQueryIndex = (row.num - 1)"
+										@dblclick="executeDetailQuery()"
+										:key="cIndex">{{ col }}</td>
+								</tr>
+							</table>
+						</vgl-component>
+
+						<vgl-component title="Details">
+							<div style="width: 100%; height: 100%; overflow: auto; position: relative">
+								<table class="data_table" v-if="detailObject">
+									<tr>
+										<th>key</th>
+										<th>value</th>
+									</tr>
+									<tr v-for="(key, rIndex) in Object.keys(detailObject)"
+										@click="selectDetail(key)"
+										:key="rIndex">
+										<td>{{ key }}</td>
+										<td>{{ detailObject[key] }}</td>
+									</tr>
+								</table>
+							</div>
+							<input @click="executeDetailQuery()"
+								type="button" class="act_button" value="fetch">
+						</vgl-component>
+
+						<vgl-component title="Data sets">
+							<div style="width: 100%; height: 100%; overflow: auto; position: relative">
+								<table id="data_sets" class="data_table" v-if="dataSets">
+									<tr>
+										<th v-for="(col, cIndex) in dataSets[0]"
+											:key="cIndex">{{ cIndex }}</th>
+									</tr>
+									<tr v-for="(row, rIndex) in dataSets" :key="rIndex">
+										<td v-for="(col, cIndex) in row"
+											@click="selectDataSet(row)"
+											:key="cIndex">{{ formatNum(col) }}</td>
+									</tr>
+								</table>
+							</div>
+							<input @click="executeDataSetsQuery()"
+								type="button" class="act_button" value="fetch">
+						</vgl-component>
+					</vgl-stack>
+				</vgl-column>
+			</vgl-row>
+		</vgl-column>
+	</vgl-root>
+	<active-bar ref="activeBar1"></active-bar>
+</div>
+
+
+
+
+
+<script type="text/javascript">
+var Vue = require('vue');
+var VueGoldenLayout = require('vue-golden-layout');
+var VueAceEditor = require('vue-ace-editor');
+var VueCytoscape = require('vue-cytoscape');
+var VueDropZone = require('vue-drop-zone');
+var VueTriState = require('vue-tri-state');
+var VueActiveBar = require('vue-active-bar');
+var SparqlGraph = require('sparql-graph');
+var AceEditorModeSparql = require('ace-editor-mode-sparql');
+var DbApi = require('db-api');
+var DbModel = require('db-model');
+
+Vue.use(VueGoldenLayout);
+Vue.use(VueAceEditor);
+Vue.use(VueCytoscape);
+Vue.use(VueDropZone);
+Vue.use(VueTriState);
+Vue.use(VueActiveBar);
+var App = Vue.extend({
+//var app = new Vue({
+//	el: '#app',
+	data: function() { return {
+		queryData: [
+//			{queryStr: 'SELECT * WHERE { ?a ?r ?b }', id: 1},
+			{queryStr: 'SELECT * WHERE { ?x ?p ?y }', id: 0}
+		],
+		currentQueryIndex: 0,
+		currentQueryIndexStr: '1',
+//		dataList: [{a: 1, b: 1}, {a: 2, b: 2}, {a: 3, b: 3}],  // for table test
+		dataList: [{num: 1}],  // for table test
+		dataSets: {},
+		detailObject: {},
+		defaultWhere: {
+			select: true,
+			parseError: false
+		},
+		sqlBuild: {
+			where: {},
+			origin: "",
+			tripleCount: "",
+			edgeCover: "",
+			hypertreeWidth : "",
+			limit: 10,
+			offset: 0
+		},
+		countResult: undefined,
+		options: {  // more like sparqlGraphOptions
+			layout: 'cose-bilkent',
+			drawGraph: 'drawGraphReg',
+			showConstants: true,
+			showEdgeLabels: false
+		},
+		renderMethodIndex: 0,
+		layoutIndex: 0
+	}; },
+	watch: {
+		'sqlBuild': {
+			handler: function() {
+				// auto build query
+				this.fillQuery();
+			},
+			deep: true
+		},
+		"currentQueryIndex": function(val) {
+			this.refreshCurrentQuery(val);
+		},
+		'options.layout': function(val) {
+			this.sparqlGraph.drawIt();
+		},
+		'options.drawGraph': function(val) {
+			this.sparqlGraph.drawIt();
+		},
+		'options.showConstants': function(val) {
+			this.sparqlGraph.drawIt();
+		},
+		'options.showEdgeLabels': function(val) {
+			this.sparqlGraph.drawIt();
+		}
+	},
+	methods: {
+		initCy: function(cy) {
+//			cy.addVertex("a");
+			this.cy = cy;
+		},
+		refreshCurrentQuery: function(index) {
+			if (index === undefined) {
+				if (this.currentQueryIndex === 0) {
+					this.refreshCurrentQuery(0);
+				} else {
+					this.currentQueryIndex = 0;
+				}
+				index = 0;
+			}
+			if (index < this.queryData.length) {
+				var editor1 = this.$refs['editor1'].editor;
+				var currentQueryRecord = this.queryData[index];
+				var currentQueryStr = currentQueryRecord['queryStr'];
+				if (currentQueryStr) {
+					editor1.setValue(currentQueryStr, -1);
+				}
+				this.currentQueryIndexStr = (index + 1).toString();
+				this.dataList = this.queryData.map(function(o, i) {
+					return Object.keys(o)
+						.filter(function(key) {
+							return !(key === 'queryStr');
+						})
+						.reduce(function(obj, key) {
+							obj[key] = o[key];
+							return obj;
+						}, {num: i + 1});
+				});
+			}
+		},
+		executeQuery: function() {
+			var that = this;
+			var editor2 = this.$refs['editor2'].editor;
+			this._doQuery(editor2.getValue()).then(function(obj) {
+				that.queryData = obj;
+				that.refreshCurrentQuery();
+			}).catch(function(e) { /* NOP */ });
+		},
+		performCount: function() {
+			var that = this;
+			this._doQuery(DbApi.makeCountQuery(this.sqlBuild)).then(function(obj) {
+//				window.alert(obj[0].count);
+				var countStr = that.formatNum(obj[0].count);
+				that.countResult = "count: " + countStr;
+				console.log("Count: " + countStr);
+				window.setTimeout(function() {
+					that.countResult = undefined;
+				}, 2000);
+			}).catch(function(e) { /* NOP */ });
+		},
+		performReset: function() {
+//			this.sqlBuild.where = this.defaultWhere;
+			this.sqlBuild.where = {};
+			for (var key in this.defaultWhere) {
+				// noinspection JSUnfilteredForInLoop
+				Vue.set(this.sqlBuild.where, key, this.defaultWhere[key]);
+			}
+//			Object.assign(this.sqlBuild.where, this.defaultWhere);
+//			Vue.set(this.sqlBuild.where, this.defaultWhere);
+			this.sqlBuild.origin = '';
+			this.sqlBuild.originMajor = '';
+			this.sqlBuild.tripleCount = '';
+			this.sqlBuild.edgeCover = '';
+			this.sqlBuild.hypertreeWidth  = '';
+			this.sqlBuild.limit = 10;
+			this.sqlBuild.offset = 0;
+		},
+		executeDetailQuery: function() {
+			var that = this;
+			var id = this.queryData[this.currentQueryIndex].id;
+			this._doQuery(DbApi.makeIdQuery(id)).then(function(obj) {
+				delete obj[0]["queryStr"];
+				delete obj[0]["hash"];
+				that.detailObject = obj[0];
+			}).catch(function(e) { /* NOP */ });
+		},
+		executeDataSetsQuery: function() {
+			var that = this;
+			this._doQuery(DbApi.makeDataSetsQuery()).then(function(obj) {
+				that.dataSets = obj;
+			}).catch(function(e) { /* NOP */ });
+		},
+		formatNum: function(obj) {
+			return obj.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+		},
+		selectDataSet: function(row) {
+			var key1 = Object.keys(row)[0];
+//			Vue.set(this.sqlBuild.where, key1, "'" + row[key1] + "'");
+			this.sqlBuild.origin = row[key1];
+		},
+		selectDetail: function(key) {
+			var value = this.detailObject[key];
+			if ((typeof value) === "string") {
+				value = '"' + value + "'";
+			}
+			Vue.set(this.sqlBuild.where, key, value);
+		},
+		_doQuery: function(str) {
+			var that = this;
+			if (window.token && window.token.cancel) {
+				var promise = window.token.cancel();
+				promise.then(function(value) {
+					return that._doQuery2(str);
+				}).catch(function (reason) {
+					return that._doQuery2(str);
+				});
+				return promise;
+			} else {
+				return that._doQuery2(str);
+			}
+		},
+		_doQuery2: function(str) {
+			var that = this;
+			window.token = {};
+			var progress = {
+				show: function() {
+					// maybe only show after threshold, e.g. 500ms
+					that.$refs['activeBar1'].active = true;
+				},
+				hide: function() {
+					that.$refs['activeBar1'].active = false;
+				}
+			};
+			progress.show();
+			var startTime = new Date().getTime();
+//			 console.log("Querying");
+			var p = DbApi.queryDb({sqlQueryStr: str, token: window.token});
+			p.then(function(obj) {
+				window.token = undefined;
+				console.log("Queried in " + (new Date().getTime() - startTime) / 1000.);
+				progress.hide();
+//				return Promise.resolve(obj);
+			}).catch(function(obj) {
+				window.token = undefined;
+				progress.hide();
+				console.log("Rejected " + obj);
+//				return Promise.reject(obj);
+			});
+			return p;
+		},
+		fillQuery: function() {
+			var editor2 = this.$refs['editor2'].editor;
+			editor2.setValue(DbApi.makeQuery({
+				where: this.sqlBuild.where,
+				origin: this.sqlBuild.origin,
+				originMajor: this.sqlBuild.originMajor,
+				tripleCount: this.sqlBuild.tripleCount,
+				edgeCover: this.sqlBuild.edgeCover,
+				hypertreeWidth : this.sqlBuild.hypertreeWidth,
+				limit: this.sqlBuild.limit,
+				offset: this.sqlBuild.offset
+			}));
+//			this.executeQuery();
+		},
+		fillAndExecuteQuery: function() {
+			this.fillQuery();
+			this.executeQuery()
+		},
+		onDrop: function(target, name, text) {
+			this.queryData = text.split("####\n")
+				.filter(function(val) {
+					return val.length > 0;
+				})
+				.map(function(val, i) {
+					return {
+						queryStr: val,
+						id: i,
+						origin: name
+					};
+				});
+			this.refreshCurrentQuery();
+		},
+		setWhere: function(key, val) {
+			if (val === 1) {
+				Vue.set(this.sqlBuild.where, key, true);
+			} else if (val === -1) {
+				Vue.set(this.sqlBuild.where, key, false);
+			} else {
+				Vue.delete(this.sqlBuild.where, key);
+			}
+		},
+		offsetPrev: function() {
+			if (this.sqlBuild.offset >= this.sqlBuild.limit) {
+				this.sqlBuild.offset = this.sqlBuild.offset - this.sqlBuild.limit;
+			} else {
+				this.sqlBuild.offset = this.sqlBuild.limit;
+			}
+		},
+		offsetNext: function() {
+			this.sqlBuild.offset = this.sqlBuild.offset + this.sqlBuild.limit;
+		},
+		nav_goto: function() {
+			this.currentQueryIndex = parseInt(this.currentQueryIndexStr) - 1;
+		},
+		nav_prev: function() {
+			this.currentQueryIndex =
+				(this.currentQueryIndex -1 + this.queryData.length) % this.queryData.length;
+		},
+		nav_next: function() {
+			this.currentQueryIndex = (this.currentQueryIndex + 1) % this.queryData.length;
+		}
+	},
+	mounted: function() {
+		AceEditorModeSparql.setupSparqlMode();
+		var editor1 = this.$refs['editor1'].editor;
+		editor1.session.setMode("ace/mode/sparql");
+		var options = {
+			cy: this.cy,
+			editor: editor1
+		};
+		options = Object.assign(this.options, options);  // ES6
+		var sparqlGraph = new SparqlGraph(options);
+		this.sparqlGraph = sparqlGraph;
+
+		var delayTimer;
+		editor1.on("input", function() {
+			window.clearTimeout(delayTimer);
+			delayTimer = window.setTimeout(function() {
+				sparqlGraph.drawIt();
+			}, 200);
+		});
+
+		sparqlGraph.drawIt();
+
+		var that = this;
+		var editor2 = this.$refs['editor2'].editor;
+		editor2.commands.addCommand({
+			name: "quickSubmit",
+			bindKey: { win: "ctrl-enter", mac: "command-enter" },
+			exec: function(env, args, request) {
+				that.executeQuery();
+			}
+		});
+		editor2.session.setMode("ace/mode/sql");
+//		editor2.setValue(DbApi.makeQuery());
+		this.performReset();
+		this.fillQuery();
+	}
+});
+var app = new App();
+app.$mount('#app');
+</script>
+
+</body>

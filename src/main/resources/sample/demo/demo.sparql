@@ -1,0 +1,33 @@
+PREFIX geo: <http://0.0.0.0/geo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX foaf: <http://0.0.0.0/foaf/>
+
+SELECT *
+WHERE
+{ { ?city rdfs:label "Diawara"@en }
+UNION
+{ ?alias <http://dbpedia.org/property/redirect> ?city ;
+rdfs:label "Diawara"@en
+}
+UNION
+{ ?alias <http://dbpedia.org/property/disambiguates> ?city ;
+rdfs:label "Diawara"@en
+}
+OPTIONAL
+{ ?city <http://dbpedia.org/ontology/abstract> ?abstract }
+OPTIONAL
+{ ?city geo:lat ?latitude ;
+geo:long ?longitude
+}
+OPTIONAL
+{ ?city foaf:depiction ?image }
+OPTIONAL
+{ ?city rdfs:label ?name }
+OPTIONAL
+{ ?city foaf:homepage ?home }
+OPTIONAL
+{ ?city <http://dbpedia.org/ontology/populationTotal> ?population }
+OPTIONAL
+{ ?city <http://dbpedia.org/ontology/thumbnail> ?thumbnail }
+FILTER langMatches(lang(?abstract), "en")
+}

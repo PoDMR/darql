@@ -1,0 +1,6381 @@
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT ?item ?itemLabel
+WHERE
+{
+	?item wdt:P31 wd:Q146 .
+
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+
+#added before 2016-10
+#Illustrates optional fields, instances of subclasses, language fallback on label service, date to year conversion
+# Chevaux sur Wikidata
+SELECT DISTINCT ?cheval ?chevalLabel ?mere ?pere (year(?naissance) AS ?naissance_) (year(?deces) as ?Décès) ?sexeLabel
+WHERE
+{
+	?cheval wdt:P31/wdt:P279* wd:Q726 .     # Instance et sous-classes de Q726-Cheval
+	  
+	OPTIONAL{?cheval wdt:P25 ?mere .}       # P25  : Mère
+	OPTIONAL{?cheval wdt:P22 ?pere .}       # P22  : Père
+	OPTIONAL{?cheval wdt:P569 ?naissance .} # P569 : Date de naissance
+	OPTIONAL{?cheval wdt:P570 ?deces .}     # P570 : Date de décès
+	OPTIONAL{?cheval wdt:P21 ?sexe .}       # P21  : Sexe
+}
+ORDER BY ?cheval
+
+####
+PREFIX schema: <http://schema.org/>
+PREFIX https: <http://https>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+#illustrates sitelink selection, ";" notation
+SELECT ?item ?itemLabel ?article
+WHERE
+{
+	?article 	schema:about ?item ;
+			schema:isPartOf <https://species.wikimedia.org/> .
+
+}
+LIMIT 200
+
+####
+PREFIX schema: <http://schema.org/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX https: <http://https>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT ?author ?authorLabel (COUNT(?paper) AS ?count)
+WHERE
+{
+	?article 	schema:about ?author ;
+			schema:isPartOf <https://species.wikimedia.org/> .
+    ?author wdt:P31 wd:Q5.
+    ?paper wdt:P50 ?author.
+
+}
+GROUP BY ?author ?authorLabel
+ORDER BY DESC(?count)
+LIMIT 200
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+SELECT ?event ?eventLabel ?date
+WHERE
+{
+	# find events
+	?event wdt:P31/wdt:P279* wd:Q1190554.
+	# with a point in time or start date
+	OPTIONAL { ?event wdt:P585 ?date. }
+	OPTIONAL { ?event wdt:P580 ?date. }
+	# but at least one of those
+	FILTER(BOUND(?date) && DATATYPE(?date) = xsd:dateTime).
+	# not in the future, and not more than 31 days ago
+	BIND(NOW() - ?date AS ?distance).
+	FILTER(0 <= ?distance && ?distance < 31).
+	# and get a label as well
+	OPTIONAL {
+		?event rdfs:label ?eventLabel.
+		FILTER(LANG(?eventLabel) = "en").
+	}
+}
+# limit to 10 results so we don't timeout
+LIMIT 10
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+
+#added before 2016-10
+#illustrates bubblechart view, count
+
+#defaultView:BubbleChart
+SELECT ?eyeColorLabel (COUNT(?person) AS ?count)
+WHERE
+{
+	?person wdt:P1340 ?eyeColor.
+}
+GROUP BY ?eyeColorLabel
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+
+#added before 2016-10
+
+#defaultView:ImageGrid
+SELECT ?item ?itemLabel ?pic
+WHERE
+{
+	?item ?prop wd:Q146 . 
+	OPTIONAL {
+		?item wdt:P18 ?pic
+	} 
+
+}
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+
+#added before 2016-10
+#Demonstrates "unknown value" handling
+SELECT ?human ?humanLabel
+WHERE
+{
+	?human wdt:P21 ?gender
+	FILTER isBLANK(?gender) .
+
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX wdno: <http://www.wikidata.org/prop/novalue/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+
+#added before 2016-10
+#Demonstrates "no value" handling
+SELECT ?human ?humanLabel
+WHERE
+{
+	?human wdt:P31 wd:Q5 .       #find humans
+	?human rdf:type wdno:P40 .   #with at least one P40 (child) statement defined to be "no value"
+
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wdno: <http://www.wikidata.org/prop/novalue/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT ?human ?humanLabel {
+  ?human wdt:P31 wd:Q5 .         #find humans
+  ?human p:P40 ?childStatement . #with at least one P40 (child) statement
+  ?childStatement a wdno:P40 .   #where the P40 (child) statement is defined to be "no value"
+}
+
+####
+PREFIX mayor: <http://mayor>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+#TEMPLATE={"template":"Largest ?c with ?sex head of government","variables":{"?sex":{"query":" SELECT ?id WHERE { ?id wdt:P31 wd:Q48264 .  } "},"?c":{"query":"SELECT DISTINCT ?id WHERE {  ?c wdt:P31 ?id.  ?c p:P6 ?mayor. }"} } }
+SELECT DISTINCT ?city ?cityLabel ?mayor ?mayorLabel 
+WHERE 
+{
+  BIND(wd:Q6581072 AS ?sex)
+  BIND(wd:Q515 AS ?c)
+
+	?city wdt:P31/wdt:P279* ?c .  # find instances of subclasses of city
+	?city p:P6 ?statement .            # with a P6 (head of goverment) statement
+	?statement ps:P6 ?mayor .          # ... that has the value ?mayor
+	?mayor wdt:P21 ?sex .       # ... where the ?mayor has P21 (sex or gender) female
+	FILTER NOT EXISTS { ?statement pq:P582 ?x }  # ... but the statement has no P582 (end date) qualifier
+	 
+	# Now select the population value of the ?city
+	# (wdt: properties use only statements of "preferred" rank if any, usually meaning "current population")
+	?city wdt:P1082 ?population .
+	# Optionally, find English labels for city and mayor:
+}
+ORDER BY DESC(?population)
+LIMIT 10
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX fallback: <http://fallback>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT ?country ?countryLabel (count(*) AS ?count) 
+WHERE 
+{
+	?city wdt:P31/wdt:P279* wd:Q515 . # find instances of subclasses of city
+	?city p:P6 ?statement .           # with a P6 (head of goverment) statement
+	?statement ps:P6 ?mayor .         # ... that has the value ?mayor
+	?mayor wdt:P21 wd:Q6581072 .      # ... where the ?mayor has P21 (sex or gender) female
+	FILTER NOT EXISTS { ?statement pq:P582 ?x }  # ... but the statement has no P582 (end date) qualifier
+	?city wdt:P17 ?country .          # Also find the country of the city
+ 	
+	# If available, get the "ru" label of the country, use "en" as fallback:
+} 
+GROUP BY ?country ?countryLabel 
+ORDER BY DESC(?count) 
+LIMIT 100
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:BubbleChart
+SELECT ?surname ?surnameLabel ?count
+WHERE
+{
+  {
+    SELECT ?surname (COUNT(?person) AS ?count) WHERE {
+      ?person wdt:P31 wd:Q5.
+      ?person wdt:P734 ?surname.
+    }
+    GROUP BY ?surname
+  }
+}
+ORDER BY DESC(?count)
+LIMIT 100
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+
+SELECT ?name (COUNT(?otherName) AS ?count)
+WHERE
+{
+  ?name wdt:P31 wd:Q202444;
+        wdt:P460 ?otherName.
+}
+GROUP BY ?name
+ORDER BY DESC(?count)
+LIMIT 10
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:BubbleChart
+SELECT ?surname ?surnameLabel ?count
+WHERE
+{
+  {
+    SELECT ?surname (COUNT(?person) AS ?count) WHERE {
+      ?person (wdt:P31/wdt:P279*) wd:Q95074.
+      ?person wdt:P734 ?surname.
+    }
+    GROUP BY ?surname
+  }
+}
+ORDER BY DESC(?count)
+LIMIT 100
+
+####
+PREFIX schema: <http://schema.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+
+SELECT ?s ?desc (COUNT(DISTINCT ?sitelink) as ?linkcount)
+WHERE
+{
+  ?s wdt:P31 wd:Q5 .
+  ?s wdt:P21 wd:Q6581072 .
+  ?s wdt:P569 ?born .
+  FILTER (?born >= "1921-01-01T00:00:00Z"^^xsd:dateTime) .
+  ?sitelink schema:about ?s .
+  OPTIONAL {
+    ?s wdt:P18 ?dummy
+  }
+  FILTER ( !bound(?dummy) ) .
+  OPTIONAL {
+     ?s rdfs:label ?desc filter (lang(?desc) = "en").
+   }
+}
+GROUP BY ?s ?desc 
+ORDER BY DESC(?linkcount)
+LIMIT 50
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+ 
+#defaultView:Map
+SELECT ?place ?placeLabel ?location
+WHERE
+{
+  # Berlin coordinates
+  wd:Q64 wdt:P625 ?berlinLoc . 
+  SERVICE wikibase:around { 
+      ?place wdt:P625 ?location . 
+      bd:serviceParam wikibase:center ?berlinLoc . 
+      bd:serviceParam wikibase:radius "100" . 
+  } 
+  # Is an airport
+  ?place wdt:P31/wdt:P279* wd:Q1248784 .
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+#added before 2016-10
+ 
+#List of airports in Belgium
+#defaultView:Map
+SELECT DISTINCT ?airport ?coor ?range
+WHERE
+{
+  ?airport wdt:P31 wd:Q1248784 ;
+  ?range wd:Q31;
+  wdt:P625 ?coor.
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+ # Schools between San Jose, CA and Sacramento, CA
+#defaultView:Map
+SELECT * 
+WHERE
+{
+  wd:Q16553 wdt:P625 ?SJloc .
+  wd:Q18013 wdt:P625 ?SCloc .
+  SERVICE wikibase:box {
+      ?place wdt:P625 ?location .
+      bd:serviceParam wikibase:cornerWest ?SJloc .
+      bd:serviceParam wikibase:cornerEast ?SCloc .
+    }
+  ?place wdt:P31/wdt:P279* wd:Q3914 .
+}
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#Whose birthday is today?
+SELECT ?entityLabel (YEAR(?date) as ?year) 
+WHERE
+{
+    BIND(MONTH(NOW()) AS ?nowMonth)
+    BIND(DAY(NOW()) AS ?nowDay)
+
+    ?entity wdt:P569 ?date .
+    FILTER (MONTH(?date) = ?nowMonth && DAY(?date) = ?nowDay)
+}
+LIMIT 10
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+ SELECT * WHERE {
+  ?p wdt:P1080 wd:Q620588 .
+  ?p rdfs:label ?pl .
+  FILTER (lang(?pl) = "en") 
+  ?p wdt:P25 ?m .
+  ?m rdfs:label ?ml .
+  FILTER (lang(?ml) = "en") 
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX entity: <http://entity>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX hint: <http://www.bigdata.com/queryHints#>
+PREFIX http: <http://http>
+
+#added before 2016-10
+
+PREFIX entity: <http://www.wikidata.org/entity/>
+#partial results
+
+SELECT ?propUrl ?propLabel ?valUrl ?valLabel ?picture
+WHERE
+{
+	hint:Query hint:optimizer 'None' .
+	{	BIND(entity:Q42 AS ?valUrl) . 
+		BIND("N/A" AS ?propUrl ) .
+		BIND("identity"@en AS ?propLabel ) .
+	}
+	UNION 
+	{	entity:Q42 ?propUrl ?valUrl .
+		?property ?ref ?propUrl .
+		?property a wikibase:Property .
+		?property rdfs:label ?propLabel
+	}
+	
+  	?valUrl rdfs:label ?valLabel
+	FILTER (LANG(?valLabel) = 'en') .
+	OPTIONAL{ ?valUrl wdt:P18 ?picture .}
+	FILTER (lang(?propLabel) = 'en' )
+}
+ORDER BY ?propUrl ?valUrl
+LIMIT 200
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+#added before 2016-10
+
+#defaultView:BubbleChart
+SELECT ?cid ?cause (count(*) as ?count)
+WHERE
+{
+	?pid wdt:P31 wd:Q5 .
+	?pid wdt:P509 ?cid .
+	OPTIONAL {
+		?cid rdfs:label ?cause 
+		filter (lang(?cause) = "en")
+	}
+}
+GROUP BY ?cid ?cause
+ORDER BY DESC(?count) ASC(?cause)
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:BubbleChart
+SELECT DISTINCT ?item ?itemLabel (?end - ?start AS ?duration)
+WHERE
+{
+	?item wdt:P361* wd:Q362 .
+	?item wdt:P31/wdt:P279* wd:Q178561 .
+	?item wdt:P580 ?start .
+	?item wdt:P582 ?end .
+
+
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#defaultView:Timeline
+SELECT ?item ?itemLabel ?launchdate (SAMPLE(?image) AS ?image_)
+WHERE
+{
+	?item wdt:P31 wd:Q26529 .
+    ?item wdt:P619 ?launchdate .
+
+    OPTIONAL { ?item wdt:P18 ?image }
+}
+GROUP BY ?item ?itemLabel ?launchdate
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#defaultView:Dimensions
+SELECT ?elementLabel ?_boiling_point ?_melting_point ?_electronegativity ?_density ?_mass WHERE {
+  ?element wdt:P31 wd:Q11344;
+   wdt:P2102 ?_boiling_point;
+   wdt:P2101 ?_melting_point;
+   wdt:P1108 ?_electronegativity;
+   wdt:P2054 ?_density;
+   wdt:P2067 ?_mass.
+}
+LIMIT 100
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX gas: <http://www.bigdata.com/rdf/gas#>
+PREFIX http: <http://http>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+ #defaultView:Graph
+PREFIX gas: <http://www.bigdata.com/rdf/gas#>
+
+SELECT ?item ?itemLabel ?pic ?linkTo
+WHERE
+{
+  SERVICE gas:service {
+    gas:program gas:gasClass "com.bigdata.rdf.graph.analytics.SSSP" ;
+                gas:in wd:Q720 ;
+                gas:traversalDirection "Forward" ;
+                gas:out ?item ;
+                gas:out1 ?depth ;
+                gas:maxIterations 4 ;
+                gas:linkType wdt:P40 .
+  }
+  OPTIONAL { ?item wdt:P40 ?linkTo }
+  OPTIONAL { ?item wdt:P18 ?pic }
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+ 
+#defaultView:Graph
+SELECT ?item ?itemLabel ?_image ?_subclass_of ?_subclass_ofLabel
+WHERE
+{
+  ?item wdt:P31 wd:Q188451.
+  OPTIONAL { ?item wdt:P279 ?_subclass_of. }
+  OPTIONAL { ?item wdt:P18 ?_image. }
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+
+#defaultView:LineChart
+SELECT  (str(?year) AS ?year_) (AVG( ?_number_of_children ) AS ?count) WHERE {
+  ?item wdt:P31 wd:Q5.
+  ?item wdt:P1971 ?_number_of_children.
+  ?item wdt:P569 ?_date_of_birth.
+  BIND( year(?_date_of_birth) as ?year ).
+  FILTER( ?year > 1900)
+}
+
+GROUP BY ?year
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX defaultView: <http://defaultView>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+
+#defaultView:LineChart
+SELECT ?country  ?year ?population ?countryLabel WHERE {
+  {
+    SELECT ?country ?year (AVG(?population) AS ?population_) WHERE {
+      {
+        SELECT ?country (str(YEAR(?date)) AS ?year) ?population WHERE {
+          ?country wdt:P47 wd:Q183.
+          ?country p:P1082 ?populationStatement.
+          ?populationStatement ps:P1082 ?population.
+          ?populationStatement pq:P585 ?date.
+        }
+      }
+    }
+    GROUP BY ?country ?year
+  }
+}
+
+####
+PREFIX defaultView: <http://defaultView>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+
+#defaultView:LineChart
+SELECT ?year (COUNT(?_genre) AS ?count ) (SAMPLE(?_genreLabel) AS ?_genreLabel_ )  WHERE {
+  ?item wdt:P31 wd:Q571.
+  ?item wdt:P577 ?_publication_date.
+  ?item wdt:P136 ?_genre.
+  ?_genre rdfs:label ?_genreLabel.
+  BIND(str(YEAR(?_publication_date)) AS ?year)
+  FILTER((LANG(?_genreLabel)) = "en")
+  
+ FILTER (?_publication_date >= "2000-00-00T00:00:00Z"^^xsd:dateTime)
+}
+GROUP BY ?_genreLabel ?year
+HAVING (?count > 10)
+
+####
+PREFIX defaultView: <http://defaultView>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+
+#defaultView:LineChart
+SELECT ?year (COUNT(?_genre) AS ?count)  (SAMPLE(?_genreLabel) AS ?_genreLabel_)  WHERE {
+  ?item wdt:P31 wd:Q215380.
+  ?item wdt:P571 ?_date.
+  ?item wdt:P136 ?_genre.
+  ?_genre rdfs:label ?_genreLabel.
+  BIND(str(YEAR(?_date)) AS ?year)
+  FILTER((LANG(?_genreLabel)) = "en")
+  FILTER(?_date >= "1960-00-00T00:00:00Z"^^xsd:dateTime)
+}
+GROUP BY ?_genreLabel ?year
+HAVING (?count > 10)
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+
+#defaultView:BarChart
+
+SELECT(SAMPLE(?year) AS ?year_) (COUNT(?_country) AS ?battles)  (SAMPLE(?_countryLabel) AS ?_countryLabel_)  WHERE {
+  ?subj wdt:P31 wd:Q178561.
+  OPTIONAL { ?subj wdt:P580 ?d1. }
+  OPTIONAL { ?subj wdt:P585 ?d2. }
+  OPTIONAL { ?subj wdt:P582 ?d3. }
+  BIND(IF(!BOUND(?d1), IF(!BOUND(?d2), ?d3, ?d2), ?d1) AS ?date)
+  BIND(str(YEAR(?date)) AS ?year)
+  ?subj wdt:P276 ?_loc.
+  ?_loc wdt:P17 ?_country.
+  ?_country rdfs:label ?_countryLabel.
+  BIND((NOW()) - ?date AS ?distance)
+  FILTER(BOUND(?year))
+  FILTER((LANG(?_countryLabel)) = "en")
+  FILTER((0 <= ?distance) && (?distance < 31 * 12 * 80))
+}
+GROUP BY ?year ?_country
+ORDER BY ?_countryLabel
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+
+#defaultView:BarChart
+SELECT (SAMPLE(?_continentLabel) AS ?contient) (COUNT(?_country) AS ?battles) (SAMPLE(?_countryLabel) AS ?_countryLabel_) (SAMPLE(?year) AS ?year_)  WHERE {
+  ?subj wdt:P31 wd:Q178561.
+  OPTIONAL { ?subj wdt:P580 ?d1. }
+  OPTIONAL { ?subj wdt:P585 ?d2. }
+  OPTIONAL { ?subj wdt:P582 ?d3. }
+  BIND(IF(!BOUND(?d1), IF(!BOUND(?d2), ?d3, ?d2), ?d1) AS ?date)
+  BIND(str(YEAR(?date)) AS ?year)
+  ?subj wdt:P276 ?_loc.
+  ?_loc wdt:P17 ?_country.
+  ?_country wdt:P30 ?_continent.
+  ?_country rdfs:label ?_countryLabel.
+  ?_continent rdfs:label ?_continentLabel.
+  
+  BIND((NOW()) - ?date AS ?distance)
+  FILTER(BOUND(?year))
+  FILTER((LANG(?_countryLabel)) = "en")
+  FILTER((LANG(?_continentLabel)) = "en")
+  FILTER((0 <= ?distance) && (?distance < 31 * 12 * 80))
+}
+GROUP BY ?year ?_country
+ORDER BY ?_countryLabel
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX defaultView: <http://defaultView>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+
+#defaultView:BarChart
+SELECT  ?year ?population ?objectLabel
+WHERE
+{
+        ?object	wdt:P31 wd:Q6256 
+        ;	p:P1082 ?populationStatement .
+        ?populationStatement    ps:P1082 ?population
+        ;	pq:P585 ?date .
+        BIND(str(YEAR(?date)) AS ?year)                
+} 
+ORDER BY ?year ?country
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+
+#defaultView:BarChart
+SELECT DISTINCT  (SAMPLE(?year) AS ?year_) (COUNT(?_country) AS ?count) (SAMPLE(?_countryLabel) AS ?_countryLabel_) WHERE {
+  ?object (wdt:P31/wdt:P279*) wd:Q134447.
+  BIND(str(YEAR(?_inception)) AS ?year)
+  ?object wdt:P571 ?_inception.
+  ?object wdt:P17 ?_country.
+  ?_country rdfs:label ?_countryLabel.
+  FILTER((LANG(?_countryLabel)) = "en")
+}
+GROUP BY ?year ?_country
+ORDER BY ?_countryLabel
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+
+#defaultView:AreaChart
+SELECT ?cid (str(SAMPLE(?year)) AS ?year_ )  (COUNT(*) AS ?count)  ?cause WHERE {
+  ?pid wdt:P31 wd:Q5.
+  ?pid wdt:P509 ?cid.
+  ?cid wdt:P279* wd:Q12078.
+  
+  OPTIONAL {
+    ?cid rdfs:label ?cause.
+    FILTER((LANG(?cause)) = "en")
+  }
+   ?pid wdt:P570 ?_date_of_death. 
+  BIND ( YEAR(?_date_of_death) AS ?year )
+  FILTER( BOUND(?cause)  )
+  FILTER( BOUND(?year)  )
+  FILTER( ?year > 1960 )
+}
+GROUP BY ?cid ?cause ?year
+
+####
+PREFIX defaultView: <http://defaultView>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:TreeMap
+SELECT ?show ?showLabel  ?season ?cleanSeasonLabel ?episode ?episodeLabel
+WHERE 
+{
+	{
+		BIND(wd:Q886 as ?show) .
+		?season wdt:P361 ?show .
+		?season rdfs:label ?_seasonLabel.
+		FILTER((LANG(?_seasonLabel)) = "en")
+		BIND(SUBSTR(?_seasonLabel, 0, STRLEN(?_seasonLabel)-23) AS ?cleanSeasonLabel)
+		?episode wdt:P361 ?season .
+	}  
+	UNION 
+	{
+		BIND(wd:Q16538 as ?show) .
+		?season wdt:P361 ?show .
+		?season rdfs:label ?_seasonLabel.
+		FILTER((LANG(?_seasonLabel)) = "en")
+		BIND(SUBSTR(?_seasonLabel, 0, STRLEN(?_seasonLabel)-20) AS ?cleanSeasonLabel)
+		?episode wdt:P361 ?season .
+	}   
+	UNION
+	{
+		BIND(wd:Q147235 as ?show) .
+		?season wdt:P361 ?show .
+		?season rdfs:label ?_seasonLabel.
+		FILTER((LANG(?_seasonLabel)) = "en")
+		BIND(CONCAT("S", SUBSTR(?_seasonLabel, 25)) AS ?cleanSeasonLabel)
+		?episode wdt:P361 ?season .
+	}
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#defaultView:TreeMap
+SELECT ?eyes ?hairColorLabel (COUNT(?person) as ?count)
+WHERE
+{
+	?person wdt:P1340 ?eyeColor.
+    ?person wdt:P1884 ?hairColor.
+    ?person wdt:P2048 ?height.
+    ?eyeColor rdfs:label ?_eyeColorLabel.
+    FILTER((LANG(?_eyeColorLabel)) = "en")
+    BIND(CONCAT(?_eyeColorLabel, " eyes") AS ?eyes)
+}
+GROUP BY ?eyes ?hairColorLabel
+
+####
+PREFIX defaultView: <http://defaultView>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+
+#defaultView:ScatterChart
+SELECT   ?year  (COUNT(?_genre) AS ?count ) (SAMPLE(?_genreLabel) AS ?label )  (?year as ?year_shown) WHERE {
+  ?item wdt:P31 wd:Q11424.
+  ?item wdt:P577 ?_publication_date.
+  ?item wdt:P136 ?_genre.
+  ?_genre rdfs:label ?_genreLabel.
+  BIND(str(YEAR(?_publication_date)) AS ?year)
+  FILTER((LANG(?_genreLabel)) = "en")
+  
+ FILTER (?_publication_date >= "2000-00-00T00:00:00Z"^^xsd:dateTime)
+}
+GROUP BY ?_genreLabel ?year
+HAVING (?count > 30)
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+#defaultView:Map
+
+SELECT ?objectLabel ?objectDescription ?link ?coord
+WHERE {
+  ?object wdt:P31 wd:Q46169 ;
+          wdt:P856 ?link ;
+          wdt:P625 ?coord .
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#defaultView:Map
+SELECT DISTINCT ?city ?cityLabel (SAMPLE(?location) AS ?location_) (MAX(?population) AS ?population_) (SAMPLE(?layer) AS ?layer_)
+WHERE
+{
+  ?city wdt:P31/wdt:P279* wd:Q515;
+        wdt:P625 ?location;
+        wdt:P1082 ?population.
+  FILTER(?population >= 500000).
+  BIND(
+    IF(?population < 1000000, "<1M",
+    IF(?population < 2000000, "1M-2M",
+    IF(?population < 5000000, "2M-5M",
+    IF(?population < 10000000, "5M-10M",
+    IF(?population < 20000000, "10M-20M",
+    ">20M")))))
+    AS ?layer).
+}
+GROUP BY ?city ?cityLabel
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+# Places with free wi-fi
+SELECT ?item ?itemLabel ?coord
+WHERE
+{
+	?item wdt:P2848 wd:Q1543615 ;
+	      wdt:P625 ?coord .
+
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+#defaultView:Map
+SELECT ?stationLabel ?coord
+WHERE {
+	?station wdt:P81 wd:Q99691 ;
+		 wdt:P625 ?coord .
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+#defaultView:Map
+SELECT ?universityLabel ?universityDescription ?website ?coord
+WHERE {
+	?university wdt:P31/wdt:P279* wd:Q3918 ;
+		wdt:P17 wd:Q183 ;
+		wdt:P625 ?coord .
+	OPTIONAL {
+		?university wdt:P856 ?website
+	}
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+#added before 2016-10
+ #defaultView:Map
+SELECT ?item ?itemLabel ?coord
+WHERE 
+{
+	?item wdt:P31/wdt:P279* wd:Q486972;
+    	      wdt:P17 wd:Q183;
+    	      rdfs:label ?itemLabel;
+    	      wdt:P625 ?coord;
+    	 FILTER (lang(?itemLabel) = "de") . 
+    	 FILTER regex (?itemLabel, "(ow|itz)$").
+}
+
+####
+PREFIX schema: <http://schema.org/>
+PREFIX defaultView: <http://defaultView>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+#defaultView:Map
+SELECT DISTINCT ?objectLabel ?descriptionLabel ?coord
+WHERE
+{
+  ?object wdt:P31/wdt:P279* wd:Q159719 .
+  ?object schema:description ?description.
+  ?object wdt:P625 ?coord.
+
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+#added before 2016-10
+#defaultView:Map
+SELECT ?label ?coord ?place ?image
+WHERE
+{
+	?subj wdt:P31 wd:Q14276458 .
+	?subj wdt:P186 wd:Q22731 .
+	?subj wdt:P625 ?coord .
+	OPTIONAL { ?subj wdt:P18 ?image }
+	?subj rdfs:label ?label filter (lang(?label) = "en")
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+#added before 2016-10
+#defaultView:Map
+SELECT ?label ?coord ?place
+WHERE
+{
+   ?subj wdt:P31 wd:Q474 .
+   ?subj wdt:P625 ?coord .
+   ?subj rdfs:label ?label filter (lang(?label) = "en")
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+#added before 2016-10
+#defaultView:Map
+SELECT ?label ?coord ?place
+WHERE
+{
+   ?subj wdt:P31 wd:Q839954 .
+   ?subj wdt:P625 ?coord .
+   ?subj rdfs:label ?label filter (lang(?label) = "en")
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+#added before 2016-10
+#defaultView:Map
+SELECT ?label ?coord ?subj 
+WHERE
+{
+   ?subj wdt:P31 wd:Q839954 .
+   ?subj wdt:P31 wd:Q23413 .
+   ?subj wdt:P625 ?coord .
+   ?subj rdfs:label ?label filter (lang(?label) = "en")
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+#added before 2016-10
+#defaultView:Map
+SELECT ?label ?coord ?subj ?year
+WHERE
+{
+	?subj wdt:P31 wd:Q178561 .
+	?subj wdt:P625 ?coord .
+	OPTIONAL {?subj wdt:P580 ?d1}
+	OPTIONAL {?subj wdt:P585 ?d2}
+  	OPTIONAL {?subj wdt:P582 ?d3}
+	BIND(IF(!BOUND(?d1),(IF(!BOUND(?d2),?d3,?d2)),?d1) as ?date)
+	BIND(YEAR(?date) as ?year)
+	?subj rdfs:label ?label filter (lang(?label) = "en")
+}
+
+####
+PREFIX psv: <http://www.wikidata.org/prop/statement/value/>
+PREFIX defaultView: <http://defaultView>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+#defaultView:Map
+SELECT DISTINCT ?item ?name ?coord ?lat ?lon
+WHERE {
+   ?item wdt:P131* wd:Q61 .
+   ?item wdt:P31/wdt:P279* wd:Q33506 .
+   ?item wdt:P625 ?coord .
+   ?item p:P625 ?coordinate .
+   ?coordinate psv:P625 ?coordinate_node .
+   ?coordinate_node wikibase:geoLatitude ?lat .
+   ?coordinate_node wikibase:geoLongitude ?lon .
+   SERVICE wikibase:label {
+    bd:serviceParam wikibase:language "en" .
+    ?item rdfs:label ?name
+   }
+}
+ORDER BY ASC (?name)
+
+####
+PREFIX psv: <http://www.wikidata.org/prop/statement/value/>
+PREFIX defaultView: <http://defaultView>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+#defaultView:Map
+SELECT DISTINCT ?item ?name ?coord ?lat ?lon
+WHERE
+{
+   ?item wdt:P31 wd:Q130003 .
+   ?item wdt:P625 ?coord .
+   ?item p:P625 ?coordinate .
+   ?coordinate psv:P625 ?coordinate_node .
+   ?coordinate_node wikibase:geoLatitude ?lat .
+   ?coordinate_node wikibase:geoLongitude ?lon .
+   SERVICE wikibase:label {
+    bd:serviceParam wikibase:language "en" .
+    ?item rdfs:label ?name
+   }
+}
+ORDER BY ASC (?name)
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+#defaultView:Map
+SELECT DISTINCT ?item ?itemLabel ?coor ?image
+WHERE
+{
+	?item wdt:P31 wd:Q39715 . 
+	?item wdt:P17 wd:Q20 .
+	OPTIONAL { ?item wdt:P625 ?coor }
+	OPTIONAL { ?item wdt:P18 ?image }  
+}
+ORDER BY ?itemLabel
+
+####
+PREFIX schema: <http://schema.org/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX cywiki: <http://cywiki>
+
+#added before 2016-10
+ #sample from cywiki:Wicipedia:Merched_a_anwyd_yng_Nghymru
+SELECT ?item
+WHERE
+{
+	# gender = female
+  	?item wdt:P21 wd:Q6581072 . 
+
+  	# place of birth = Wales (Q25)
+  	{ ?item wdt:P19 wd:Q25 }
+	# OR place of birth within Wales. This relies on places using P131 with Q25 ("Wales") as value (or with a value that has Q25 in P131)
+	UNION  { ?item wdt:P19 ?pob . ?pob wdt:P131* wd:Q25 } 
+
+	# look for articles (sitelinks) in Welsh ("cy")
+  	OPTIONAL { ?sitelink schema:about ?item . ?sitelink schema:inLanguage "cy" } 
+	# but select items with no such article
+	FILTER (!BOUND(?sitelink))
+
+	# humans only
+  	?item wdt:P31 wd:Q5 . 
+}
+#Listeria can only handle up to 5000
+LIMIT 1000
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+ #Definition for Occitania (Q104285) is the one defined by P527 on item Q104285
+SELECT ?item ?yob ?yod 
+WHERE 
+{
+	# items with property place of birth
+	?item wdt:P19 ?pob .
+	#place of birth must be using P131 with one of the "?parts" (or -- note the "*" -- a value that uses one of the parts in P131, etc.) 
+	?pob wdt:P131* ?parts .
+
+	# ?parts are those listed on item Q104285 with property P527
+	wd:Q104285 wdt:P527 ?parts .  
+
+	# humans only
+  	?item wdt:P31 wd:Q5 . 
+
+	#for display in the list, extract yob/yod. Could also be done by using P569 and P570 in "columns=" of Listeria's template
+	OPTIONAL { ?item wdt:P569 ?dob . BIND(YEAR(?dob) as ?yob) }
+	OPTIONAL { ?item wdt:P570 ?dod . BIND(YEAR(?dod) as ?yod) }
+}
+#LIMIT to 2000 as Listeria can only handle up to 5000
+LIMIT 2000
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+ 
+SELECT ?item ?dob
+WHERE
+{
+  	# place of birth = Scotland (Q22)
+  	{ ?item wdt:P19 wd:Q22 }
+	# OR place of birth within Scotland.
+	UNION  { ?item wdt:P19 ?pob . ?pob wdt:P131* wd:Q22 }
+
+	# humans only
+  	?item wdt:P31 wd:Q5 . 
+
+	# get DOB for ordering.
+	OPTIONAL { ?item wdt:P569 ?dob  }
+}
+#Order by date of birth, avoid overriding this in the template with sort=
+ORDER BY ?dob
+#Listeria can only handle up to 5000
+LIMIT 4000
+#start at the first item
+OFFSET 0
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+ #same as (1), but but skipping the 4000 items in that list
+SELECT ?item ?dob
+WHERE
+{
+  	{ ?item wdt:P19 wd:Q22 }
+	UNION  { ?item wdt:P19 ?pob . ?pob wdt:P131* wd:Q22 }
+  	?item wdt:P31 wd:Q5 . 
+	OPTIONAL { ?item wdt:P569 ?dob  }
+}
+ORDER BY ?dob
+LIMIT 4000
+#start at the 4001th item
+OFFSET 4000
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+SELECT DISTINCT ?band ?bandLabel
+WHERE
+{
+	?band  wdt:P31 wd:Q5741069 . 
+        ?band rdfs:label ?bandLabel .
+	FILTER(STRSTARTS(?bandLabel, 'M')) .
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT DISTINCT ?item ?itemLabel ?awardLabel ?time
+{
+    ?item wdt:P106/wdt:P279* wd:Q3455803 ; # Items with the Occupation(P106) of Director(Q3455803) or a subclass(P279)
+          p:P166 ?awardStat .              # ... with an awarded(P166) statement
+    ?awardStat pq:P805 ?award ;            # Get the award (which is "subject of" XXth Academy Awards)
+               ps:P166 wd:Q103360 .        # ... that has the value Academy Award for Best Director(Q103360)
+    ?award wdt:P585 ?time .                # the "point of time" of the Academy Award
+    SERVICE wikibase:label {               # ... include the labels
+        bd:serviceParam wikibase:language "en"
+    }
+}
+ORDER BY DESC(?time)
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT ?human ?humanLabel ?awardEditionLabel ?awardLabel ?awardWork ?awardWorkLabel ?director ?directorLabel ?time 
+WHERE 
+{
+	{
+		SELECT (SAMPLE(?human) AS ?human_) ?award ?awardWork (SAMPLE(?director) AS ?director_) (SAMPLE(?awardEdition) AS ?awardEdition_) (SAMPLE(?time) AS ?time_) WHERE {
+			?award wdt:P31 wd:Q19020 .			# All items that are instance of(P31) of Academy awards (Q19020)
+			{
+				?human p:P166 ?awardStat .              # Humans with an awarded(P166) statement
+				?awardStat ps:P166 ?award .     	 # ... that has any of the values of ?award
+				?awardStat pq:P805 ?awardEdition . # Get the award edition (which is "subject of" XXth Academy Awards)
+				?awardStat pq:P1686 ?awardWork . # The work they have been awarded for
+				?human wdt:P31 wd:Q5 . 				# Humans
+			} UNION {
+				?awardWork wdt:P31 wd:Q11424 . # Films
+				?awardWork p:P166 ?awardStat . # ... with an awarded(P166) statement
+				?awardStat ps:P166 ?award .     	 # ... that has any of the values of ?award
+				?awardStat pq:P805 ?awardEdition . # Get the award edition (which is "subject of" XXth Academy Awards)
+			}
+			OPTIONAL {
+				?awardEdition wdt:P585 ?time . # the "point of time" of the Academy Award
+				?awardWork wdt:P57 ?director .
+			}
+		}
+		GROUP BY ?awardWork ?award # We only want every movie once for a category (a 'random' person is selected)
+	}
+
+	SERVICE wikibase:label {            # ... include the labels
+		bd:serviceParam wikibase:language "en" .
+	}
+}
+ORDER BY DESC(?time)
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT DISTINCT ?personLabel WHERE {
+  ?person wdt:P166/wdt:P279* wd:Q7191 .
+  ?person wdt:P166/wdt:P279* wd:Q19020 .
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?awardCount ?award ?awardLabel WHERE {
+	{
+		SELECT (COUNT(?award) AS ?award_Count) ?award
+		WHERE 
+		{
+			{
+				SELECT (SAMPLE(?human) AS ?human_) ?award ?awardWork (SAMPLE(?director) AS ?director_) (SAMPLE(?awardEdition) AS ?awardEdition_) (SAMPLE(?time) AS ?time_) WHERE {
+					?award wdt:P31 wd:Q19020 .			# All items that are instance of(P31) of Academy awards (Q19020)
+					{
+						?human p:P166 ?awardStat .              # Humans with an awarded(P166) statement
+						?awardStat ps:P166 ?award .     	 # ... that has any of the values of ?award
+						?awardStat pq:P805 ?awardEdition . # Get the award edition (which is "subject of" XXth Academy Awards)
+						?awardStat pq:P1686 ?awardWork . # The work they have been awarded for
+						?human wdt:P31 wd:Q5 . 				# Humans
+					} UNION {
+						?awardWork wdt:P31 wd:Q11424 . # Films
+						?awardWork p:P166 ?awardStat . # ... with an awarded(P166) statement
+						?awardStat ps:P166 ?award .     	 # ... that has any of the values of ?award
+						?awardStat pq:P805 ?awardEdition . # Get the award edition (which is "subject of" XXth Academy Awards)
+					}
+					OPTIONAL {
+						?awardEdition wdt:P585 ?time . # the "point of time" of the Academy Award
+						?awardWork wdt:P57 ?director .
+					}
+				}
+				GROUP BY ?awardWork ?award # We only want every movie once for a category (a 'random' person is selected)
+			}
+		} GROUP BY ?award
+		ORDER BY ASC(?awardCount)
+	}
+	SERVICE wikibase:label {            # ... include the labels
+		bd:serviceParam wikibase:language "en" .
+	}
+}
+
+####
+PREFIX schema: <http://schema.org/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+
+SELECT ?director ?director_label (count(distinct ?film) as ?films) (count(distinct ?sitelink) as ?sitelinks) ((?films * ?sitelinks) as ?rank)
+WHERE
+{
+	?director wdt:P106 wd:Q2526255 .  				# has "film director" as occupation
+	?film wdt:P57 ?director . 	 					# get all films directed by the director
+    ?sitelink schema:about ?director .				# get all the sitelinks about the director
+
+	OPTIONAL {?director rdfs:label ?director_label  # get the label of the director (if it exists)
+              FILTER (lang(?director_label) = "en") # filter for only English labels
+	} 	
+}
+
+GROUP BY ?director ?director_label
+ORDER BY DESC(?rank)
+LIMIT 100
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT ?show ?showLabel  ?season ?seasonNumber ?episode ?episodeLabel
+WHERE
+{
+	BIND(wd:Q886 as ?show) .
+	?season wdt:P361 ?show .
+	?episode wdt:P361 ?season .
+	?season p:P179 [
+	        pq:P1545 ?seasonNumber] .
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+# Gotta catch 'em all
+SELECT ?pokemon ?pokemonLabel ?pokedexNumber
+WHERE
+{
+    ?pokemon wdt:P31/wdt:P279* wd:Q3966183.
+    ?pokemon wdt:P1112 ?pokedexNumber
+}
+ORDER BY (?pokedexNumber)
+
+####
+PREFIX https: <http://https>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+
+#added before 2016-10
+
+# All Law & Order episodes on Wikidata.
+# According to enwp, “[a] total of 456 original episodes… aired before cancellation” (https://en.wikipedia.org/wiki/List_of_Law_%26_Order_episodes).
+# As of this writing, the query returns 440 results, so some episodes are missing (either without item or lacking the necessary statements to match this query).
+
+SELECT (SAMPLE(?seasonNumber) AS ?seasonNumber_) (SAMPLE(?episodeNumber) AS ?episodeNumber_) (SAMPLE(?title) AS ?title_) (MIN(?pubDate) AS ?pubDate_) ?episode
+WHERE
+{
+  # All episodes should be instance of episode with series Law & Order.
+  ?episode wdt:P31 wd:Q1983062;
+           wdt:P179 wd:Q321423.
+  # Many of them also have the season as series, so we can get episode and season number from qualifiers there.
+  OPTIONAL {
+    ?episode p:P179 [
+               ps:P179 [
+                 # the season also has series Law & Order
+                 p:P179 [
+                   ps:P179 wd:Q321423;
+                   pq:P1545 ?seasonNumber
+                 ]
+               ];
+               pq:P1545 ?episodeNumber
+             ].
+  }
+  OPTIONAL { ?episode wdt:P1476 ?title. }
+  OPTIONAL { ?episode wdt:P577 ?pubDate. }
+}
+GROUP BY ?episode # make sure we return each episode only once – a few have multiple publication dates, for example
+ORDER BY IF(BOUND(?seasonNumber),xsd:integer(?seasonNumber),1000) xsd:integer(?episodeNumber) ?title
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT DISTINCT ?subject ?subjectLabel
+WHERE
+{
+  ?episode wdt:P31/wdt:P279* wd:Q1983062.
+  ?episode wdt:P179 wd:Q3577037.
+  ?episode wdt:P921 ?subject.
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT ?item ?itemLabel ?_image
+WHERE
+{
+  ?item wdt:P161 wd:Q221074.
+  OPTIONAL { ?item wdt:P18 ?_image. }
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+
+SELECT *
+WHERE
+{
+	?u rdfs:label ?ul .
+	FILTER (lang(?ul) = "en") 
+	?m rdfs:label ?ml .
+	FILTER (lang(?ml) = "en") 
+	?p wdt:P1080 ?u.
+	?p wdt:P31 ?m .
+	?p wdt:P1080 wd:Q931597 .
+	?p rdfs:label ?pl . 
+	FILTER (lang(?pl) = "en") 
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added 2016-10-0 (1998 results)
+SELECT ?item ?itemLabel ?itemDescription ?img ?dob ?sl
+WHERE
+{
+	?item wdt:P106 wd:Q33999 .
+	?item wdt:P27 wd:Q668 .
+	?item wdt:P21 wd:Q6581072 .
+	OPTIONAL { ?item wdt:P570 ?d } FILTER(!BOUND(?d))  
+	?item wdt:P31 wd:Q5 .
+	OPTIONAL { ?item wdt:P18 ?img }
+	OPTIONAL { ?item wdt:P569 ?dob }  
+	OPTIONAL { ?item wikibase:sitelinks ?sl }
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX http: <http://http>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?continent ?continentLabel
+WHERE
+{
+  ?continent wdt:P31 wd:Q5107.
+}
+ORDER BY xsd:integer(SUBSTR(STR(?continent),STRLEN("http://www.wikidata.org/entity/Q")+1))
+
+####
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX http: <http://http>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?continentLabel
+WHERE
+{
+  { # subquery for optimization so the label service doesn’t have to do as much work (228?ms vs 20731?ms)
+    SELECT DISTINCT ?continent
+    WHERE
+    {
+      [] wdt:P30 ?continent.
+    }
+  }
+}
+ORDER BY xsd:integer(SUBSTR(STR(?continent),STRLEN("http://www.wikidata.org/entity/Q")+1))
+
+####
+PREFIX geof: <http://geof>
+PREFIX continent: <http://continent>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:Map
+SELECT ?place ?placeLabel ?location WHERE {
+  wd:Q933 wdt:P625 ?southPole.                         # coordinates of south pole
+  ?place wdt:P30 wd:Q51;                               # continent: antarctica
+         wdt:P625 ?location.
+  FILTER(geof:distance(?location, ?southPole) > 3000). # over 3000?km away from south pole
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT DISTINCT ?country ?countryLabel ?capital ?capitalLabel
+WHERE
+{
+  ?country wdt:P31 wd:Q3624078 .
+  FILTER NOT EXISTS {?country wdt:P31 wd:Q3024240}
+  OPTIONAL { ?country wdt:P36 ?capital } .
+}
+ORDER BY ?countryLabel
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#Largest cities per country
+SELECT DISTINCT ?city ?cityLabel ?population ?country ?countryLabel ?loc WHERE {
+	{
+		SELECT (MAX(?population) AS ?population_) ?country WHERE {
+			?city wdt:P31/wdt:P279* wd:Q515 .
+			?city wdt:P1082 ?population .
+			?city wdt:P17 ?country .
+		}
+		GROUP BY ?country
+		ORDER BY DESC(?population)
+	}
+	?city wdt:P31/wdt:P279* wd:Q515 .
+	?city wdt:P1082 ?population .
+	?city wdt:P17 ?country .
+	?city wdt:P625 ?loc .
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#Interesting maintenance query that shows the relative prominence of a country's current (living) population on Wikidata. The query tends to time out when using all countries at once, but it might be possible to get the figures for each individual country by using uncommenting the line as indicated below
+SELECT
+	?country ?countryLabel
+	?wikiPersons
+	?population
+	(ROUND(?wikiPersons/?population*1000000) AS ?wikiPersonsPerM)
+WHERE
+{
+	{ SELECT ?country (count(*) as ?wikiPersons) WHERE {
+		{SELECT DISTINCT ?person ?country WHERE {
+			?country wdt:P31 wd:Q185441 .
+			# BIND( wd:Q30 AS ?country ) # use instead of previous line to check individual countries
+			?person wdt:P31 wd:Q5 .
+			?person wdt:P27 ?country .
+			FILTER NOT EXISTS{ ?person wdt:P570 ?date } # only count living people
+		} }
+	} GROUP BY ?country  }
+	?country wdt:P1082 ?population
+
+}
+ORDER BY DESC(?wikiPersonsPerM)
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#papers about Wikidata
+SELECT ?item ?itemLabel
+WHERE
+{
+  ?item (wdt:P31/wdt:P279*) wd:Q191067.
+  ?item wdt:P921 wd:Q2013.
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+# defaultView:BubbleChart
+SELECT DISTINCT ?countryLabel ?population
+{
+  ?country wdt:P31 wd:Q6256 ;
+           wdt:P1082 ?population .
+}
+GROUP BY ?population ?countryLabel
+ORDER BY DESC(?population)
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT ?country ?countryLabel ?population ?totalCityPopulation (?population / ?totalCityPopulation AS ?ratio) {
+  ?country wdt:P1082 ?population .
+  {
+    SELECT ?country (SUM(?cityPopulation) AS ?totalCityPopulation) WHERE {
+      ?city wdt:P31 wd:Q515 .
+      ?city wdt:P17 ?country .
+      ?city wdt:P1082 ?cityPopulation .
+    } GROUP BY ?country
+  }
+} ORDER BY ?ratio
+
+####
+PREFIX defaultView: <http://defaultView>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:Map
+SELECT DISTINCT ?country ?countryLabel ?capital ?capitalLabel ?coordinates ?ended
+WHERE
+{
+  ?country p:P36 ?stat.
+  ?stat ps:P36 ?capital.
+  ?capital wdt:P625 ?coordinates.
+  OPTIONAL {
+    ?country wdt:P582|wdt:P576 ?ended.
+  }
+  OPTIONAL {
+    ?capital wdt:P582|wdt:P576 ?ended.
+  }
+  OPTIONAL {
+    ?stat pq:P582 ?ended.
+  }
+  FILTER(BOUND(?ended)).
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+ #defaultView:BubbleChart
+SELECT DISTINCT ?cityLabel ?population ?gps
+WHERE 
+{
+  ?city wdt:P31/wdt:P279* wd:Q515 .
+  ?city wdt:P1082 ?population .
+  ?city wdt:P625 ?gps .
+}
+ORDER BY DESC(?population) LIMIT 100
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+
+#added before 2016-10
+
+#defaultView:Map
+SELECT DISTINCT ?city ?cityLabel ?populatie2 ?coor WHERE {
+  wd:Q12892 wdt:P1082 ?populatie .
+  ?city wdt:P1082 ?populatie2 ;
+        wdt:P625 ?coor .
+  FILTER (abs(?populatie - ?populatie2) < 1000)
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:Map
+SELECT DISTINCT ?city ?cityLabel ?location ?populatie2 WHERE {
+  wd:Q9832 wdt:P1082 ?populatie .
+  ?city wdt:P1082 ?populatie2 ;
+        wdt:P625 ?location .
+  FILTER (abs(?populatie - ?populatie2) < 1000)
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+
+#added before 2016-10
+ 
+#defaultView:Map
+SELECT DISTINCT ?settlement ?name ?coor
+WHERE
+{
+   
+   ?subclass_settlement wdt:P279+ wd:Q486972 .
+   ?settlement wdt:P31 ?subclass_settlement ;
+               wdt:P625 ?coor ;
+                rdfs:label ?name .
+   FILTER regex(?name, "Antwerp", "i") 
+
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+
+#added before 2016-10
+
+#defaultView:Map
+SELECT ?connectsairport ?connectsairportLabel ?place_served ?place_servedLabel ?coor
+WHERE
+{
+  VALUES ?airport { wd:Q17480 } # Antwerp international airport  wd:Q17480
+  ?airport wdt:P81 ?connectsairport ;
+           wdt:P625 ?base_airport_coor .
+  ?connectsairport wdt:P931 ?place_served ;
+                   wdt:P625 ?coor .
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+
+#added before 2016-10
+ 
+#defaultView:Map
+SELECT ?city ?cityLabel ?coordinates
+WHERE
+{
+   VALUES ?highway {wd:Q327162 } 
+   ?highway wdt:P2789 ?city .
+    ?city wdt:P625 ?coordinates .
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+
+#added before 2016-10
+ 
+#defaultView:Map
+SELECT ?city ?cityLabel ?coordinates
+WHERE
+{
+   VALUES ?highway { wd:Q559037 wd:Q58767 } 
+   ?highway wdt:P2789 ?city .
+    ?city wdt:P625 ?coordinates .
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+
+#added before 2016-10
+
+#defaultView:Map
+SELECT DISTINCT ?connection ?connectionLabel ?connectedWith ?connectedWithLabel ?coor
+WHERE
+{
+  VALUES ?city {wd:Q3001} # wd:Q3001 = Paramaribo}
+  ?connection wdt:P2789+ ?city ;
+              wdt:P2789+ ?connectedWith .
+  ?connectedWith wdt:P625 ?coor .
+  }
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+
+#added before 2016-10
+
+# Show the names of 100 cities with a population larger than 1000000 in the native languages of their countries
+SELECT ?city ?cityLabel ?country ?countryLabel ?lang ?langLabel ?langCode ?population
+WHERE
+{
+  ?city wdt:P1082 ?population .
+  
+  FILTER(?population>1000000)
+  
+  ?city wdt:P31 wd:Q515;
+        wdt:P17 ?country;
+        rdfs:label ?cityLabel .
+  ?country wdt:P37 ?lang;
+           rdfs:label ?countryLabel .
+  ?lang wdt:P424 ?langCode;
+        rdfs:label ?langLabel .
+  
+  FILTER(lang(?cityLabel)=?langCode)
+  FILTER(lang(?countryLabel)=?langCode)
+  FILTER(lang(?langLabel)=?langCode)
+} LIMIT 100
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+
+#added before 2016-10
+ 
+#defaultView:BubbleChart
+SELECT ?item ?itemLabel ?length ?pic ?location
+WHERE
+{
+  ?item wdt:P31/wdt:P279* wd:Q4022 .
+  ?item wdt:P2043 ?length .
+  ?item wdt:P18 ?pic .
+  ?item wdt:P625 ?location
+} ORDER BY DESC(?length) ?itemLabel
+LIMIT 50
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+
+#added before 2016-10
+
+SELECT ?continent ?river ?continentLabel ?riverLabel
+WHERE
+{
+  {
+    SELECT ?continent (MAX(?length) AS ?length_)
+    WHERE
+    {
+      ?river wdt:P31/wdt:P279* wd:Q355304;
+             wdt:P2043 ?length;
+             wdt:P30 ?continent.
+    }
+    GROUP BY ?continent
+  }
+  ?river wdt:P31/wdt:P279* wd:Q355304;
+         wdt:P2043 ?length;
+         wdt:P30 ?continent.
+}
+ORDER BY ?continentLabel
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+#added before 2016-10
+
+# Bodies of water that most watercourses end in (transitive).
+# For example, over 4000 watercourses eventually flow into the Ob,
+# and since the Ob flows into the Kara Sea, the Kara Sea has over 4000 results as well.
+SELECT ?mouth (COUNT(?watercourse) AS ?count)
+WHERE
+{
+  ?watercourse wdt:P403+ ?mouth.
+}
+GROUP BY ?mouth
+ORDER BY DESC(?count)
+LIMIT 10
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?river ?riverLabel ?location
+WHERE
+{
+  ?river wdt:P31/wdt:P279* wd:Q355304; # watercourse; includes a few creeks – use wd:Q4022 for rivers only
+         wdt:P30 wd:Q51.
+  OPTIONAL { ?river wdt:P625 ?location. }
+}
+
+####
+PREFIX psv: <http://www.wikidata.org/prop/statement/value/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT DISTINCT ?item ?name ?coord ?lat ?lon ?globe
+{
+   ?item wdt:P31 wd:Q8502 ;
+         p:P625 [
+           psv:P625 [
+             wikibase:geoLatitude ?lat ;
+             wikibase:geoLongitude ?lon ;
+             wikibase:geoGlobe ?globe ;
+           ] ;
+           ps:P625 ?coord
+         ]
+  FILTER ( ?globe != wd:Q2 )
+  SERVICE wikibase:label {
+    bd:serviceParam wikibase:language "en" .
+    ?item rdfs:label ?name
+   }
+}
+ORDER BY ASC (?name)
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#Mountains over 8000 elevation
+SELECT ?subj ?label ?coord ?elev 
+WHERE
+{
+	?subj wdt:P2044 ?elev	filter(?elev > 8000) .
+	?subj wdt:P625 ?coord .
+	SERVICE wikibase:label { bd:serviceParam wikibase:language "en,zh" . ?subj rdfs:label ?label } 
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+ 
+SELECT ?subj ?label ?coord ?elev 
+WHERE
+{
+	?subj wdt:P2044 ?elev	filter(?elev > 8000) .
+	?subj wdt:P625 ?coord .
+	SERVICE wikibase:label { bd:serviceParam wikibase:language "en,zh" . ?subj rdfs:label ?label } 
+}
+
+####
+PREFIX defaultView: <http://defaultView>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+ 
+#defaultView:ImageGrid
+SELECT ?subj ?label ?coord ?elev ?picture
+WHERE
+{
+	?subj wdt:P2044 ?elev	filter(?elev > 4000) .
+	?subj wdt:P625 ?coord .
+    ?subj wdt:P17 wd:Q38 .
+  	?subj wdt:P18 ?picture .
+
+	SERVICE wikibase:label { bd:serviceParam wikibase:language "it" . ?subj rdfs:label ?label } 
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT ?item ?itemLabel ?adjacent ?adjacentL ?coords
+{
+  ?item wdt:P31/wdt:P279* wd:Q928830 ;
+        wdt:P81 wd:Q13224 ;
+        wdt:P625 ?coords .
+  OPTIONAL {
+    ?item p:P197 [ ps:P197 ?adjacent ; pq:P560 wd:Q585752 ] .
+    ?adjacent rdfs:label ?adjacentL filter (lang(?adjacentL) = "en")
+  }
+} ORDER BY ?itemLabel
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:Map
+# Venues in Broadway
+SELECT DISTINCT ?venue ?venueLabel ?coords {
+  	?venue wdt:P1217 ?IDBDB .
+    wd:Q235065 wdt:P625 ?broadWayLoc .
+
+    SERVICE wikibase:around {
+      ?venue wdt:P625 ?coords .
+      bd:serviceParam wikibase:center ?broadWayLoc . 
+      bd:serviceParam wikibase:radius "1.5" . 
+    }
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT ?state ?stateLabel ?borders 
+WHERE 
+{
+	{
+		SELECT ?state (COUNT(?otherState) as ?borders) 
+		WHERE
+		{
+		?state wdt:P31 wd:Q35657 .
+		?otherState wdt:P47 ?state .
+		?otherState wdt:P31 wd:Q35657 .
+		} 
+		GROUP BY ?state
+	}
+}         
+ORDER BY DESC(?borders)
+
+####
+PREFIX psv: <http://www.wikidata.org/prop/statement/value/>
+PREFIX defaultView: <http://defaultView>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:Map
+SELECT ?p ?location ?el ?image
+WHERE
+{ 
+  ?p p:P2044/psv:P2044 ?pel.
+  ?pel wikibase:quantityAmount ?el.
+  ?pel wikibase:quantityUnit ?unit.
+  bind(0.01 as ?km).
+  filter( (?el < ?km*1000 && ?unit = wd:Q11573) ||
+         (?el < ?km*3281 && ?unit = wd:Q3710)
+       || (?el < ?km && ?unit = wd:Q828224) ). 
+  ?p wdt:P625 ?location.
+  optional { ?p wdt:P18 ?image }
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+
+#added before 2016-10
+ SELECT (count(?v) as ?c) ?globe 
+WHERE
+{
+	?v wikibase:geoGlobe ?globe
+}
+GROUP BY ?globe 
+ORDER BY DESC(?c)
+
+####
+PREFIX geof: <http://geof>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+ SELECT ?place ?placeLabel ?location ?instanceLabel
+WHERE
+{
+  wd:Q9188 wdt:P625 ?loc . 
+  SERVICE wikibase:around { 
+      ?place wdt:P625 ?location . 
+      bd:serviceParam wikibase:center ?loc . 
+      bd:serviceParam wikibase:radius "1" . 
+  } 
+  OPTIONAL {  	?place wdt:P31 ?instance  }
+  BIND(geof:distance(?loc, ?location) as ?dist) 
+} ORDER BY ?dist
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT ?entityLabel ?inseeCode ?entity
+WHERE 
+{
+	?entity wdt:P374 ?inseeCode .
+	FILTER (
+		 ?inseeCode in ("75056", "69123", "13055")
+	)
+
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#Lists emergency numbers and the total amount of people which can use them
+#defaultView:BubbleChart
+SELECT ?emergencyNumber ?emergencyNumberLabel ?tel ?population ?countries
+WHERE
+{
+ ?emergencyNumber wdt:P31 wd:Q694554 .
+  OPTIONAL{SELECT ?emergencyNumber (COUNT(?state) as ?countries) (SUM(?pop) as ?population) WHERE {
+  	?state wdt:P2852 ?emergencyNumber .
+  	OPTIONAL{?state wdt:P1082 ?pop} .
+  	?state wdt:P31/wdt:P279* wd:Q6256
+  } GROUP BY ?emergencyNumber } .
+  OPTIONAL{?emergencyNumber wdt:P1329 ?tel }
+}
+ORDER BY DESC(?population)
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX Note: <http://Note>
+PREFIX Limits: <http://Limits>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+# German states, ordered by the number of company headquarters per million inhabitants
+# Replace wd:Q1221156 (state of Germany) by anything else you care about, e.g., wd:Q6256 (country)
+# Nested queries for correctness (don't count companies twice) and performance (aggregate before adding more data)
+# Limits: states without population missing; company data in Wikidata is always incomplete
+# Note: This query shows some not-so-easy nesting of DISTINCT (don't count any company twice) and aggregate, in combination with arithmetic output evaluation functions. It is a hard query that may time out if modified.
+SELECT
+	?state ?stateLabel
+	?companies
+	?population
+	(?companies/?population*1000000 AS ?companiesPerM)
+WHERE
+{
+	{ SELECT ?state (count(*) as ?companies) WHERE {
+		{SELECT DISTINCT ?company ?state WHERE {
+			?state wdt:P31 wd:Q1221156 .
+			?company wdt:P31/wdt:P279* wd:Q4830453 .
+			?company wdt:P159/wdt:P131* ?state .
+			FILTER NOT EXISTS{ ?company wdt:P576 ?date } # don't count dissolved companies
+		} }
+	} GROUP BY ?state  }
+    ?state wdt:P1082 ?population
+}
+ORDER BY DESC(?companiesPerM)
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+#added before 2016-10
+ 
+#defaultView:BubbleChart
+SELECT ?cid ?firstname (COUNT(*) AS ?count)
+WHERE
+{
+  ?pid wdt:P19 wd:Q64.
+  ?pid wdt:P735 ?cid.
+  OPTIONAL {
+    ?cid rdfs:label ?firstname 
+    FILTER((LANG(?firstname)) = "en")
+  }
+}
+GROUP BY ?cid ?firstname
+ORDER BY DESC(?count) ?firstname
+LIMIT 50
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:Map
+SELECT DISTINCT ?item ?itemLabel ?ed ?edLabel ?auteurLabel (year(?dateCreation) as ?AnneeCreation) ?lieuLabel ?coord ?lien
+WHERE
+{
+  ?item wdt:P136 wd:Q1164267 .    # genre :récit de voyage
+  ?item  wdt:P31 wd:Q571 .        # nature : livre 
+  OPTIONAL{
+    ?item wdt:P50 ?auteur .       # [option] auteur
+  }
+  OPTIONAL{
+    ?item wdt:P571 ?dateCreation. # [option] date de création               
+  }
+  
+  ?item  wdt:P840 ?lieu .         # lieu de l'action
+  MINUS {?item  wdt:P840 wd:Q933} # (bug du Pôle Sud)
+  ?lieu wdt:P625 ?coord .         # coordonnées géographiques du lieu
+  
+  {
+    ?item wdt:P953 ?lien .        # URL, texte intégral disponible sur 
+    ?item wdt:P364 wd:Q150        # langue originale : français
+  }UNION{
+    ?ed wdt:P629 ?item .          # édition du livre
+    ?ed wdt:P953 ?lien .          # URL, texte intégral disponible sur  
+    ?ed wdt:P407 wd:Q150          # langue de l'œuvre : français
+  }
+} ORDER BY ?dateCreation
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?place ?placeLabel ?location
+WHERE
+{
+  wd:Q24041662 wdt:P625 ?loc00 . 
+  SERVICE wikibase:around { 
+    ?place wdt:P625 ?location . 
+    bd:serviceParam wikibase:center ?loc00 . 
+    bd:serviceParam wikibase:radius "0.001" . 
+  }
+}
+ORDER BY ?placeLabel
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+#added before 2016-10
+
+#defaultView:Map
+SELECT ?item ?itemLabel ?coord
+WHERE
+{
+	?item	wdt:P31/wdt:P279* wd:Q484170;
+				wdt:P17 wd:Q142;
+				rdfs:label ?itemLabel;
+				wdt:P625 ?coord;
+	FILTER (lang(?itemLabel) = "fr"). 
+	FILTER regex (?itemLabel, "ac$").
+	FILTER not exists { ?item wdt:P131 wd:Q33788 } # excluding Koumac, New Caledonia...
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT ?item ?itemLabel ?count
+WHERE
+{
+  {
+    SELECT ?item (COUNT(DISTINCT ?country) AS ?count) WHERE {
+      ?item wdt:P31/wdt:P279* wd:Q41176 .
+      ?item wdt:P17 ?country .
+      FILTER NOT EXISTS { ?country wdt:P576 ?end }
+    }
+    GROUP BY ?item
+  }
+  FILTER ( ?count > 1 )
+}
+ORDER BY DESC(?count) ?itemL
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+# Coordinates of the birth places of people named Antoine
+#defaultView:Map
+SELECT ?item ?itemLabel ?coord
+WHERE
+{
+  ?item wdt:P735 wd:Q15235674.
+  ?item wdt:P19 ?place.
+  ?place wdt:P625 ?coord.
+}
+
+####
+PREFIX psv: <http://www.wikidata.org/prop/statement/value/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+# Select the desired columns and get labels
+SELECT ?occ ?occLabel ?avgAge ?avgBirthYear ?count
+WHERE
+{
+  {
+    # Group the people by their occupation and calculate age
+    SELECT
+    	?occ
+        (count(?p) as ?count)
+        (round(avg(?birthYear)) as ?avgBirthYear)
+        (avg(?deathYear - ?birthYear) as ?avgAge)
+    WHERE {
+      {
+        # Get people with occupation + birth/death dates; combine multiple birth/death dates using avg
+        SELECT
+        	?p
+            ?occ
+            (avg(year(?birth)) as ?birthYear)
+            (avg(year(?death)) as ?deathYear)
+        WHERE {
+           ?p  wdt:P31 wd:Q5 ;
+              wdt:P106 ?occ ;
+              p:P569/psv:P569 [
+                wikibase:timePrecision "9"^^xsd:integer ; # precision of at least year
+                wikibase:timeValue ?birth ;
+              ] ;
+              p:P570/psv:P570 [
+                wikibase:timePrecision "9"^^xsd:integer ; # precision of at least year
+                wikibase:timeValue ?death ;
+              ] .
+        }
+        GROUP BY ?p ?occ
+      } 
+    }
+    GROUP BY ?occ
+  }
+  
+  FILTER (?count > 300) # arbitrary number to weed out values with 'few' observations
+}
+ORDER BY ASC(?avgAge)
+
+####
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+#added before 2016-10
+ SELECT ?person (MAX(?dateC) AS ?dateC_)
+WHERE
+{
+	# Use two SELECTs here in order to work on smaller sets (otherwise the query times out)
+	{
+		SELECT ?person (COUNT(?date) AS ?dateC) WHERE {
+			?person wdt:P569 ?date .
+			FILTER (?date > "1940-01-01T00:00:00Z"^^xsd:dateTime) .
+		}
+		GROUP BY ?person
+		ORDER BY DESC (?dateC)
+		LIMIT 100
+	} UNION {
+		SELECT ?person (COUNT(?date) AS ?dateC) WHERE  {
+			?person wdt:P569 ?date .
+			FILTER (?date <= "1965-01-01T00:00:00Z"^^xsd:dateTime) .
+		}
+		GROUP BY ?person
+		ORDER BY DESC (?dateC)
+		LIMIT 100
+	}
+} 
+GROUP BY ?person
+ORDER BY DESC (?dateC)
+LIMIT 100
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT ?parent ?parentLabel ?count
+WHERE
+{
+  {
+    SELECT ?parent (COUNT(?child) AS ?count)
+    WHERE
+    {
+      ?parent wdt:P40 ?child.
+    }
+    GROUP BY ?parent
+    ORDER BY DESC(?count)
+    LIMIT 10
+  }
+}
+ORDER BY DESC(?count)
+LIMIT 10
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+ SELECT ?genderlabel (COUNT(?genderlabel) as ?total)
+WHERE
+{
+   ?subj wdt:P39 wd:Q654291  .
+   ?subj wdt:P21 ?gender .
+  
+   ?gender rdfs:label ?genderlabel filter (lang(?genderlabel) = "en") .
+   ?subj rdfs:label ?label filter (lang(?label) = "en")
+}
+GROUP BY ?genderlabel
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+
+SELECT DISTINCT ?item ?title ?seats ?jurisdiction (YEAR(?inception) AS ?start) (YEAR(?dissolution) AS ?end)
+WHERE
+{
+  ?item wdt:P31/wdt:P279* wd:Q1752346 .
+  OPTIONAL { ?item wdt:P1342 ?seats . }
+  OPTIONAL {
+    ?item wdt:P1001 ?j .
+    ?j rdfs:label ?jurisdiction filter (lang(?jurisdiction) = "en") .
+  }
+  OPTIONAL { ?item wdt:P571 ?inception . }
+  OPTIONAL { ?item wdt:P576 ?dissolution . }
+  OPTIONAL { ?item rdfs:label ?title filter (lang(?title) = "en") . }
+} 
+ORDER BY DESC(?seats) ?title
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added by Jura1, rev. 2016-11-08
+SELECT DISTINCT ?age ?country ?countryLabel ?hgovernment ?hgovernmentLabel
+{
+	?country wdt:P31 wd:Q3624078 . 
+	FILTER NOT EXISTS {?country wdt:P31 wd:Q3024240}
+	?country p:P6 ?statement .     
+	?statement ps:P6 ?hgovernment . 
+	?country wdt:P6 ?hgovernment . 
+	FILTER NOT EXISTS { ?statement pq:P582 ?x }  
+	?hgovernment wdt:P569 ?dob . BIND(YEAR(now())-YEAR(?dob) as ?age)
+	FILTER(?age>=65)
+
+}
+ORDER BY DESC(?age)
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT ?cc (COUNT(DISTINCT ?child) AS ?number)
+WHERE
+{
+  ?child wdt:P31 wd:Q5 . # Looking for real humans and not fictional ones
+  ?child wdt:P39/wdt:P279* wd:Q83307 . 
+  {  
+     ?child wdt:P22 ?parent . 
+     ?parent wdt:P39/wdt:P279* wd:Q83307 . 
+  } UNION { 
+     ?child wdt:P25 ?parent . 
+     ?parent wdt:P39/wdt:P279* wd:Q83307 .
+  }
+  
+  ?child wdt:P27 ?country .
+  ?country wdt:P901 ?cc . 
+}
+GROUP BY ?cc 
+ORDER BY DESC(?number)
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT DISTINCT ?item ?itemLabel ?placeLabel ?countryLabel
+WHERE
+{
+  ?item wdt:P39 wd:Q3044918 .
+  ?item wdt:P19 ?place .
+  ?place wdt:P17 ?country .
+  FILTER NOT EXISTS { ?place wdt:P17 wd:Q142 . }
+} 
+ORDER BY ?countryLabel ?itemLabel
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:ImageGrid
+SELECT ?building ?buildingLabel ?country ?countryLabel ?picture
+WHERE
+{
+	?building wdt:P31 wd:Q7138926 .
+	?building wdt:P18 ?picture .
+	OPTIONAL { ?building wdt:P17 ?country } .   #if available
+}
+ORDER BY ?countryLabel
+LIMIT 188
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT ?sideLabel (COUNT(?jurisdiction) AS ?count)
+WHERE
+{
+  ?jurisdiction wdt:P1622 ?side.
+}
+GROUP BY ?sideLabel
+ORDER BY ?sideLabel
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+#added before 2016-10
+
+#defaultView:Map
+SELECT ?person ?name ?coord ?place ?birthplace ?birthyear
+WHERE
+{
+   {?person wdt:P106 wd:Q188094 .} UNION {?person wd:P101 wd:Q8134.}. MINUS {?person wdt:P106 wd:Q188094. ?person wd:P101 wd:Q8134.}
+   ?person wdt:P19 ?place .
+   ?place wdt:P625 ?coord .
+      OPTIONAL { ?person wdt:P569 ?dob .}.
+	BIND(YEAR(?dob) as ?birthyear).
+   ?person rdfs:label ?name filter (lang(?name) = "en")
+   ?place rdfs:label ?birthplace filter (lang(?birthplace) = "en")
+}
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?item ?itemLabel ?billions
+WHERE
+{
+  ?item wdt:P2218 ?worth.
+  FILTER(?worth>1000000000).
+  BIND(?worth/1000000000 AS ?billions).
+}
+ORDER BY DESC(?billions)
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+#added before 2016-10
+
+SELECT ?disease ?doid ?enLabel (count(?language) as ?languages) 
+WHERE
+{
+	?disease wdt:P699 ?doid ;
+             rdfs:label ?label ;
+             rdfs:label ?enLabel .
+    FILTER (lang(?enLabel) = "en")
+    
+    BIND (lang(?label) AS ?language)
+}
+group by ?disease ?doid ?enLabel
+order by desc(?languages)
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+#added before 2016-10
+#defaultView:Graph
+SELECT DISTINCT ?item ?itemLabel ?rgb ?link
+WHERE
+{
+  VALUES ?toggle { true false }
+  ?disease wdt:P699 ?doid;
+           wdt:P279+ wd:Q18123741;
+           wdt:P2176 ?drug.
+  ?drug rdfs:label ?drugLabel.
+		FILTER(LANG(?drugLabel) = "en").
+  ?disease rdfs:label ?diseaseLabel.
+		FILTER(LANG(?diseaseLabel) = "en").
+  BIND(IF(?toggle,?disease,?drug) AS ?item).
+  BIND(IF(?toggle,?diseaseLabel,?drugLabel) AS ?itemLabel).
+  BIND(IF(?toggle,"FFA500","7FFF00") AS ?rgb).
+  BIND(IF(?toggle,"",?disease) AS ?link).
+}
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX p: <http://www.wikidata.org/prop/>
+
+#added before 2016-10
+
+SELECT (COUNT(?disease) AS ?total) (SUM(?ref) AS ?byDO) (100*?byDO/?total AS ?percent)
+WHERE
+{
+  {?disease wdt:P31 wd:Q12136 }
+  UNION
+  {?disease wdt:P279 wd:Q12136 .}
+  OPTIONAL {
+    ?disease p:P699 ?statement.
+    BIND(1 AS ?ref).
+  }
+}
+
+####
+PREFIX schema: <http://schema.org/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+SELECT DISTINCT ?item ?ncbi_gene ?date_modified
+WHERE
+{
+	?item wdt:P351 ?ncbi_gene ;
+          wdt:P703 wd:Q15978631 ; 
+          schema:dateModified ?date_modified .
+    BIND (now() - ?date_modified as ?date_range)
+    FILTER (?date_range < 8)
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+
+#defaultView:BarChart
+SELECT  ?variant_typeLabel (count(?variant_typeLabel) as ?counts)
+WHERE
+{
+	?item wdt:P3329 ?civic_id ;
+          wdt:P31 ?variant_type .
+
+}
+GROUP BY ?variant_typeLabel
+ORDER BY ?counts
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT ?geneLabel ?variantLabel 
+WHERE
+{  
+	VALUES ?disease {wd:Q188874}
+    ?variant wdt:P3358 ?disease ; # P3358 Positive prognostic predictor
+          wdt:P3433 ?gene . # P3433 biological variant of
+
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+
+# variants that are associated with renal cell carcinoma
+SELECT DISTINCT ?civic_id ?item ?itemLabel 
+WHERE
+{
+	VALUES ?property {
+                      wdt:P3356 # positive diagnostic predictor 
+                      wdt:P3357 # negative diagnostic predictor
+                      wdt:P3358 # positive prognostic predicator
+                      wdt:P3359 # negative prognostic predictor
+                     }
+    ?item wdt:P3329 ?civic_id .
+    {?item  ?property wd:Q1164529.} # wd:Q1164529 = renal cell carcinoma 
+    UNION 
+    {?item p:P3354 ?o . # positive therapeutic predictor
+     ?o pq:P2175 wd:Q1164529 .}
+    UNION 
+    {?item p:P3354 ?o . # negative therapeutic predictor
+     ?o pq:P2175 wd:Q1164529 .}
+      
+
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT ?item ?itemLabel ?uniprotid ?tax_node
+WHERE
+{
+	?item wdt:P352 ?uniprotid ;
+          wdt:P703 wd:Q15978631 .
+    
+
+}
+
+####
+PREFIX bd: <http://www.bigdata.com/rdf#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX http: <http://http>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX pr: <http://www.wikidata.org/prop/reference/>
+
+PREFIX pr: <http://www.wikidata.org/prop/reference/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+SELECT ?compound ?compoundLabel ?speciesLabel ?sourceLabel ?doi ?wpid WHERE {
+  ?compound wdt:P31 wd:Q11173.
+  MINUS { ?compound wdt:P31 wd:Q8054. }
+  ?compound p:P703 ?statement.
+  ?statement rdf:type wikibase:BestRank.
+  ?statement ps:P703 ?species.
+  OPTIONAL {
+    ?statement (prov:wasDerivedFrom/pr:P248) ?source.
+    OPTIONAL { ?statement (prov:wasDerivedFrom/pr:P2410) ?wpid. }
+    OPTIONAL { ?statement (prov:wasDerivedFrom/pr:P356) ?doi. }
+  }
+}
+ORDER BY ASC(?compound)
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX https: <http://https>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX http: <http://http>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+
+#added before 2016-10
+
+#cases where a drug physically interacts with the product of gene known to be genetically associated a disease
+#these cases may show opportunities to repurpose a drug for a new disease
+#See http://database.oxfordjournals.org/content/2016/baw083.long  and
+#http://drug-repurposing.nationwidechildrens.org/search
+#an example that was recently validated involved a new link between Metformin wd:Q19484 and cancer survival 
+#https://jamia.oxfordjournals.org/content/22/1/179
+#currently set up to find drugs for cancers that target genes related to cell proliferation
+#adapt by changing constraints (e.g. to 'heart disease' Q190805) or removing them 
+SELECT ?drugLabel ?geneLabel ?biological_processLabel ?diseaseLabel
+WHERE {
+  ?drug wdt:P129 ?gene_product .   # drug interacts with a gene_product 
+  ?gene wdt:P688 ?gene_product .  # gene_product (usually a protein) is a product of a gene (a region of DNA)
+  ?disease	wdt:P2293 ?gene .    # genetic association between disease and gene 
+  ?disease wdt:P279*  wd:Q12078 .  # limit to cancers wd:Q12078 (the * operator runs up a transitive relation..)
+  ?gene_product wdt:P682 ?biological_process . #add information about the GO biological processes that the gene is related to  
+  #limit to genes related to certain biological processes (and their sub-processes):
+  		#apoptosis wd:Q14599311 
+  		#cell proliferation wd:Q14818032
+  {?biological_process wdt:P279* wd:Q14818032 } # chain down subclass
+   UNION 
+  {?biological_process wdt:P361* wd:Q14818032 } # chain down part of
+    #uncomment the next line to find a subset of the known true positives (there are not a lot of them in here yet)
+  #?disease wdt:P2176 ?drug . 	# disease is treated by a drug
+}
+LIMIT 1000
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+
+SELECT ?short_author (count(?item) as ?count)
+WHERE
+{
+  { ?item wdt:P921 wd:Q202864 . } UNION { ?item wdt:P921 wd:Q8071861 . }
+  ?item wdt:P2093 ?short_author .
+}
+GROUP BY ?short_author 
+ORDER BY DESC(?count)
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?item ?itemLabel ?_PubMed_ID
+WHERE
+{
+  ?item wdt:P31 wd:Q13442814.
+  SERVICE wikibase:label {
+    bd:serviceParam wikibase:language "en".
+    ?item rdfs:label ?itemLabel.
+  }
+  FILTER(CONTAINS(LCASE(?itemLabel), "zika"))
+  OPTIONAL { ?item wdt:P698 ?_PubMed_ID. }
+}
+LIMIT 1000
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?item ?itemLabel ?reference  ?referenceType
+WHERE
+{
+  ?item wdt:P31 wd:Q13442814.#Scientific article
+  { ?item wdt:P921 wd:Q202864. } #Zika virus
+  UNION
+  { ?item wdt:P921 wd:Q8071861. } #Zika fever
+  ?reference ?referenceType ?item.  #find references to item having any property and store reference type
+}
+LIMIT 500
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+ 
+#defaultView:Graph
+SELECT ?item ?itemLabel ?pic ?linkTo
+WHERE
+{
+  wd:Q42196 wdt:P171* ?item
+  OPTIONAL { ?item wdt:P171 ?linkTo }
+  OPTIONAL { ?item wdt:P18 ?pic }
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?taxon ?eponym ?taxonName ?eponymLabel
+WHERE
+{
+  ?taxon wdt:P31 wd:Q16521;
+         wdt:P225 ?taxonName;
+         wdt:P138 ?eponym.
+}
+ORDER BY ?eponym
+
+####
+PREFIX https: <http://https>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT DISTINCT ?personLabel (CONCAT("https://twitter.com/",?twitterName) AS ?twitterlink) ?pic
+WHERE {
+  ?person wdt:P2002 ?twitterName ;
+    wdt:P106 ?occupation .
+  OPTIONAL { ?person wdt:P18 ?pic . }
+  ?occupation wdt:P279* wd:Q864503 . # all subclasses of biologists
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?moleculeLabel ?formule ?picture ?molecule
+WHERE
+{ 
+	?molecule  wdt:P31 wd:Q12140
+	; wdt:P274 ?formule
+	; wdt:P117 ?picture
+} 
+ORDER BY ?moleculeLabel
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+
+SELECT ?organism_name
+WHERE
+{   
+	?organism_item wdt:P276 wd:Q5880
+	; rdfs:label ?organism_name . 
+	?gene wdt:P703 ?organism_item
+	; wdt:P1056 wd:Q319541 . 
+	FILTER (LANG(?organism_name) = "en") .    
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT DISTINCT ?idExtension ?extension ?mediaType ?idExtensionLabel 
+WHERE
+{
+	?idExtension wdt:P31 wd:Q235557
+	; wdt:P1195 ?extension .
+	OPTIONAL { ?idExtension wdt:P1163 ?mediaType }
+
+} 
+ORDER BY ?extension ?mediaType
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT DISTINCT ?standard ?standardLabel ?website
+WHERE
+{
+        ?standard wdt:P1462 wd:Q37033 .
+        OPTIONAL{ ?standard wdt:P856 ?website }
+} 
+ORDER BY ?standardLabel
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT ?software ?softwareLabel ?date (ROUND((NOW() - ?date)/365.2425) AS ?age)
+{
+  ?software wdt:P31/wdt:P139* wd:Q7397.
+  OPTIONAL { ?software wdt:P571 ?date. }
+  OPTIONAL { ?software p:P348/pq:P577 ?date. }
+  FILTER(BOUND(?date)).
+}
+ORDER BY ?date
+LIMIT 10
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT ?lang ?langLabel ?human ?humanLabel ?educatedat ?educatedatLabel ?coords
+{
+  ?lang wdt:P31/wdt:P279* wd:Q9143 .
+  ?human wdt:P31 wd:Q5 .
+  { ?lang wdt:P287 ?human } UNION { ?lang wdt:P170 ?human } UNION { ?lang wdt:P943 ?human } UNION { ?lang wdt:P178 ?human } .
+
+  ?human wdt:P69 ?educatedat .
+  ?educatedat wdt:P625 ?coords .
+}
+LIMIT 100
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT ?database ?databaseLabel ?value WHERE {
+  ?database ?p ?wds.
+  ?wds ?v ?value.
+  ?wdP wikibase:statementProperty ?v.
+  ?wdP wikibase:claim ?p.
+  ?wds pq:P31 wd:Q27075870.
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT ?ereader ?ereaderLabel 
+
+WHERE {
+  ?ereader wdt:P31  wd:Q726235 .
+  ?ereader wdt:P1072 wd:Q1941622 .
+  }
+
+####
+PREFIX defaultView: <http://defaultView>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#defaultView:BubbleChart
+SELECT ?app ?appLabel (COUNT(?format) AS ?count)
+
+WHERE {
+  ?app (p:P31/ps:P31/wdt:P279*) wd:Q7397 .
+  ?app wdt:P1073 ?format .
+  }
+
+GROUP BY ?app ?appLabel
+ORDER BY DESC(?count)
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#defaultView:ImageGrid
+SELECT  ?personLabel  ?image ?Erdos
+
+WHERE {
+  ?person wdt:P485 wd:Q964035 .
+  ?person wdt:P18 ?image .
+  ?person wdt:P2021 ?Erdos
+  }
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?elementLabel ?_boiling_point ?_melting_point ?_electronegativity ?_density ?_mass
+WHERE
+{
+  ?element wdt:P31 wd:Q11344.
+  ?element wdt:P2102 ?_boiling_point.
+  ?element wdt:P2101 ?_melting_point.
+  ?element wdt:P1108 ?_electronegativity.
+  ?element wdt:P2054 ?_density.
+  ?element wdt:P2067 ?_mass.
+}
+LIMIT 100
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+
+SELECT ?element (SAMPLE(?symbol) AS ?symbol_) (SAMPLE(?protons) AS ?protons_) (MIN(?neutrons) AS ?minNeutrons) (MAX(?neutrons) AS ?maxNeutrons)
+WHERE
+{
+  ?element wdt:P31 wd:Q11344;
+           wdt:P1086 ?protons;
+           wdt:P246 ?symbol.
+  ?isotope wdt:P279 ?element;
+           wdt:P1148 ?neutrons.
+}
+GROUP BY ?element
+ORDER BY ?protons
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:BubbleChart
+SELECT ?rgb ?colorLabel (COUNT(?compound) AS ?count)
+WHERE
+{
+  ?compound wdt:P31 wd:Q11173;
+            wdt:P462 ?color.
+  OPTIONAL { ?color wdt:P465 ?rgb. }
+  BIND(IF(BOUND(?rgb),?rgb,"CCCCCC") AS ?rgb_).
+}
+GROUP BY ?rgb ?colorLabel
+
+####
+PREFIX bd: <http://www.bigdata.com/rdf#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX pr: <http://www.wikidata.org/prop/reference/>
+
+#added before 2016-10
+
+SELECT ?compound ?compoundLabel ?pKa ?source ?sourceLabel ?doi
+WHERE
+{
+  ?compound wdt:P31 wd:Q11173 ; p:P1117 ?statement .
+  ?statement a wikibase:BestRank ;
+    ps:P1117 ?pKa .
+  OPTIONAL {
+    ?statement prov:wasDerivedFrom/pr:P248 ?source .
+    OPTIONAL { ?source wdt:P356 ?doi . }
+  } #English label
+}
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT DISTINCT ?compound ?compoundLabel ?cas
+WHERE
+{
+  ?compound wdt:P231 ?cas .
+}
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#two chemical compounds with the same CAS registry number
+SELECT DISTINCT ?cas ?compound1 ?compound1Label ?compound2 ?compound2Label WHERE {
+  ?compound1 wdt:P231 ?cas .
+  ?compound2 wdt:P231 ?cas .
+  FILTER (?compound1 != ?compound2) 
+}
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+#added before 2016-10
+
+#The number of times a cas registry number is shared by distinct Wikidata items
+SELECT ?cas ?items
+WHERE
+{
+	{SELECT DISTINCT ?cas (count(?compound) as ?items) WHERE {
+  		?compound wdt:P231 ?cas .
+	}
+    GROUP BY ?cas }
+    FILTER (?items >1)
+}
+ORDER BY desc(?items)
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX defaultView: <http://defaultView>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#defaultView:Timeline
+SELECT DISTINCT ?item ?itemLabel ?when (YEAR(?when) as ?date) ?pic
+WHERE {
+  ?item p:P166 ?awardStat . # … with an awarded(P166) statement
+  ?awardStat ps:P166 wd:Q44585 . # … that has the value Nobel Prize in Chemistry (Q35637)
+  ?awardStat pq:P585 ?when . # when did he receive the Nobel prize
+OPTIONAL { ?item wdt:P18 ?pic } 
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT ?discoverer ?name (COUNT(?asteroid) AS ?count)
+WHERE
+{
+	?asteroid wdt:P31 wd:Q3863 .
+	?asteroid wdt:P61 ?discoverer .
+	SERVICE wikibase:label {
+		bd:serviceParam wikibase:language "en" .
+		?discoverer rdfs:label ?name
+	}
+}
+GROUP BY ?discoverer ?name
+ORDER BY DESC(?count)
+LIMIT 10
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT
+	?discoverer ?discovererLabel  
+	(COUNT(DISTINCT ?planet) as ?count)
+	(GROUP_CONCAT(DISTINCT(?planetLabel); separator=", ") as ?planets)
+WHERE
+{
+	?ppart wdt:P279* wd:Q634 .
+	?planet wdt:P31 ?ppart .
+	?planet wdt:P61 ?discoverer .
+	SERVICE wikibase:label {
+		bd:serviceParam wikibase:language "en" .
+		?discoverer rdfs:label ?discovererLabel .
+		?planet rdfs:label ?planetLabel            
+	}
+}
+GROUP BY ?discoverer ?discovererLabel
+ORDER BY DESC(?count)
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:ImageGrid
+SELECT ?spaceProbeLabel ?date ?picture
+WHERE
+{
+	?spaceProbe wdt:P31 wd:Q26529; 
+        wdt:P18 ?picture; 
+        wdt:P619 ?date . #mandatory
+}
+ORDER BY ?date
+LIMIT 88
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+# select all astronauts with name, image, birthdate, birthplace and coordinates of the birthplace
+
+SELECT ?astronaut ?astronautLabel ?image ?birthdate ?birthplace ?coord WHERE {
+  ?astronaut ?x1 wd:Q11631;
+  wdt:P18 ?image;
+  wdt:P569 ?birthdate;
+  wdt:P19 ?birthplace.
+  
+  ?birthplace wdt:P625 ?coord
+}
+ORDER BY DESC(?birthdate)
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+SELECT ?gender (count(distinct ?human) as ?number)
+WHERE
+{
+	?human wdt:P31 wd:Q5
+	; wdt:P21 ?gender
+	; wdt:P106/wdt:P279* wd:Q901 .
+}
+GROUP BY ?gender
+LIMIT 10
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?eponym ?eponymLabel ?count ?sample ?sampleLabel
+WHERE
+{
+	{
+	SELECT ?eponym (COUNT(?item) as ?count) (SAMPLE(?item) AS ?sample)
+	WHERE
+	{
+		?item wdt:P138 ?eponym.
+		?eponym wdt:P106 wd:Q170790.
+	}
+	GROUP BY ?eponym
+	}
+
+}
+ORDER BY DESC(?count)
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:BubbleChart
+SELECT ?occupationLabel (count(DISTINCT ?author) as ?count) 
+WHERE
+{
+        ?object wdt:P31 wd:Q13442814
+        ; wdt:P50 ?author .
+        ?author wdt:P106 ?occupation .
+} 
+GROUP BY ?occupationLabel
+ORDER BY DESC(?count)
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added in 2016-10
+
+#Authors of scientific articles who received a Nobel prize
+SELECT ?item ?itemLabel ?person ?personLabel ?_image ?award ?awardLabel
+WHERE {
+  ?person wdt:P166 ?award ; #person received an award
+          wdt:P31 wd:Q5 . #person is instance of human
+  ?award wdt:P279* wd:Q7191 . #award is a Nobel Prize
+  ?item wdt:P50 ?person ; #person is an author of item
+        wdt:P31 wd:Q13442814 . #item is a scientific article
+  
+OPTIONAL { ?person wdt:P18 ?_image. } #Wikimedia Commons has an image of person
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+
+SELECT ?entity ?desc ?author WHERE {
+  VALUES ?wd_author {wd:Q18016466} #initialize "?wd_author" with the Wikidata item "Lydia Pintscher"  
+  
+  ?entity wdt:P31 wd:Q13442814. #filter by scientific articles
+  ?entity wdt:P50 ?wd_author.
+  
+  ?wd_author rdfs:label ?author. 
+  FILTER((LANG(?author)) = "en").
+  
+  ?entity rdfs:label ?desc.
+  FILTER((LANG(?desc)) = "en").  
+}
+
+####
+PREFIX schema: <http://schema.org/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX https: <http://https>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX http: <http://http>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#Female scientists with most number of sitelinks (but not English Wikipedia)
+PREFIX schema: <http://schema.org/>
+
+SELECT ?item ?itemLabel (COUNT(DISTINCT ?sitelink) AS ?linkcount) WHERE {
+    ?item wdt:P31 wd:Q5 .
+    ?item wdt:P21 wd:Q6581072 .
+    ?item wdt:P106 wd:Q901 .
+    ?sitelink schema:about ?item .
+  FILTER NOT EXISTS {
+    ?article schema:about ?item .
+    ?article schema:inLanguage "en" .
+    ?article schema:isPartOf <https://en.wikipedia.org/>
+  }
+}
+GROUP BY ?item ?itemLabel
+ORDER BY DESC(?linkcount)
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT ?inventor ?inventorLabel ?gadet ?gadgetLabel
+WHERE {
+  ?inventor wdt:P157 ?gadget .
+  ?gadet wdt:P61 ?inventor .
+  SERVICE wikibase:label { 
+    bd:serviceParam wikibase:language "en" . 
+    ?inventor rdfs:label ?inventorLabel .
+    ?gadget rdfs:label ?gadgetLabel .
+  }
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added 2016-12
+##defaultView:BubbleChart
+SELECT ?author ?authorLabel (COUNT(?publication) AS ?count)
+WHERE
+{
+    ?item wdt:P2860 ?publication . #citations
+    ?publication wdt:P50 ?author . #authors
+    ?author wdt:P21 wd:Q6581072. #females
+}
+GROUP BY ?author ?authorLabel
+ORDER BY DESC(?count)
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+#added before 2016-10
+
+SELECT DISTINCT ?pmid ?doi
+WHERE
+{
+	?item wdt:P698 ?pmid ;
+              wdt:P356 ?doi .
+}
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX pr: <http://www.wikidata.org/prop/reference/>
+
+SELECT ?doi (COUNT (?entry) as ?entries)
+{
+  ?entry ?p ?statement .
+  ?statement prov:wasDerivedFrom/pr:P248/wdt:P356 ?doi .
+} 
+GROUP BY ?doi 
+ORDER BY DESC(?entries)
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX http: <http://http>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+#added before 2016-10
+
+SELECT (COUNT (?statement) as ?statements)
+WHERE
+{
+  ?entry ?p ?statement .
+  ?statement prov:wasDerivedFrom/
+       <http://www.wikidata.org/prop/reference/P248>/
+       wdt:P356 ?doi .
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX http: <http://http>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+#added before 2016-10
+
+SELECT ?entryRes ?entry ?statement
+WHERE
+{
+  ?entryRes ?p ?statement ;
+    rdfs:label ?entry .
+  ?statement prov:wasDerivedFrom/
+       <http://www.wikidata.org/prop/reference/P248>/
+       wdt:P356 "10.1021/ja01577a030" .
+   FILTER(lang(?entry) = "en")
+}
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX DOID: <http://DOID>
+
+#added before 2016-10
+
+SELECT ?English ?language ?label
+WHERE
+{
+	?disease wdt:P699 "DOID:399"
+	; rdfs:label ?English
+	; rdfs:label ?label .
+	FILTER (LANG(?English) = "en")
+	BIND(LANG(?label) as ?languageCode) 
+	?languageCode ^ps:P424 ?lstatement  .	?lstatement pq:P794 wd:Q22283033	; ^p:P424 ?wdLanguage .
+	?wdLanguage rdfs:label ?language .
+	FILTER (LANG(?language)="en")
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT DISTINCT ?journal ?name WHERE {
+    ?journal wdt:P31 wd:Q5633421 . # is scientific journal
+    {
+            { ?journal wdt:P921 wd:Q199655 }   # with topic library science
+      UNION { ?journal wdt:P921 wd:Q16387 }    # and/or topic information science
+      UNION { ?journal wdt:P921 wd:Q13420675 } # and/or topic library and information science   
+    }
+    SERVICE wikibase:label {
+        bd:serviceParam wikibase:language "en" .
+        ?journal rdfs:label ?name .
+    }
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+select (count(?work) as ?count) ?subject ?subjectLabel where {
+  ?work wdt:P31 wd:Q13442814; 
+        wdt:P921 ?subject .
+}
+group by ?subject ?subjectLabel
+order by desc(?count)
+limit 200
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?proof ?proofLabel
+WHERE
+{
+  ?proof wdt:P31 wd:Q11538.
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+
+SELECT DISTINCT *
+WHERE
+{
+	?item 	wdt:P31 wd:Q8513 ;
+		rdfs:label ?name .
+	OPTIONAL {	?item  wdt:P275 ?licenseItem .
+			?licenseItem rdfs:label ?license . 
+			FILTER (LANG(?license) = "en")}
+	FILTER (LANG(?name) = "en")	
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+PREFIX note: <http://note>
+
+#added before 2016-10
+
+# Finds authors who have published scientific articles together,
+# but whose Erdos numbers are more than one apart.
+# These would appear to violate the definition of the Erdos number.
+
+SELECT
+	# Q#s
+	?paper
+	?author1
+	?author2
+	# title (either from title statement or label)
+	(IF(BOUND(?title), ?title, ?paperLabel) AS ?title_)
+	# author labels (should be names) and their Erdos numbers
+	?author1Label
+	?erdos1
+	?author2Label
+	?erdos2
+	# distance between Erdos numbers
+	?distance
+WHERE
+{
+	# paper, instance of or subclass of scientific article; also has two authors
+	?paper wdt:P31/wdt:P279* wd:Q13442814;
+	         wdt:P50 ?author1, ?author2.
+	# if it has a title, we’ll grab that as well, but it’s also okay if there’s no title
+	OPTIONAL { ?paper wdt:P1476 ?title. }
+	# grab Erdos numbers of the two authors
+	?author1 wdt:P2021 ?erdos1.
+	?author2 wdt:P2021 ?erdos2.
+	# introduce a new variable for the difference of the Erdos numbers
+	BIND(?erdos2 - ?erdos1 AS ?distance).
+	# select those cases where the distance is > 1
+	# (note: by *not* taking the absolute value of the distance, we avoid getting duplicated cases because the author variables might be swapped)
+	FILTER(?distance > 1).
+	# get *Label variables automagically
+}
+# sort by distance first (descending), then by first author, then by second author
+ORDER BY DESC(?distance) ?author1Label ?author2Label
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+
+SELECT ?universe (SAMPLE(?label) AS ?label_) (COUNT(?planet) AS ?count)
+WHERE
+{
+  ?planet wdt:P31 wd:Q2775969;
+          wdt:P1080 ?universe.
+  ?universe rdfs:label ?label.
+  FILTER(LANG(?label) = "en").
+}
+GROUP BY ?universe
+ORDER BY DESC(?count)
+
+####
+PREFIX psv: <http://www.wikidata.org/prop/statement/value/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT ?object ?objectLabel (MAX(?mass) AS ?mass_)
+WHERE
+{
+  ?object p:P2067/psv:P2067 [
+    wikibase:quantityAmount ?baseMass;
+    wikibase:quantityUnit [
+      p:P2370/psv:P2370 [
+        wikibase:quantityAmount ?unitMass;
+        wikibase:quantityUnit wd:Q11570
+      ]
+    ]
+  ].
+  BIND(?baseMass * ?unitMass AS ?mass).
+  MINUS { ?object wdt:P31 wd:Q3647172. }
+}
+GROUP BY ?object ?objectLabel
+ORDER BY DESC(?mass)
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+ 
+SELECT DISTINCT *
+WHERE
+{
+	?item wdt:P31 wd:Q4117139 ;
+          rdfs:label ?name .
+    OPTIONAL {?item  wdt:P275 ?licenseItem .
+    ?licenseItem rdfs:label ?license . 
+    FILTER (LANG(?license) = "en")}
+    FILTER (LANG(?name) = "en")	
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+ SELECT ?uLabel ?founded ?stateLabel ?stateStart
+WHERE
+{
+	?u wdt:P31/wdt:P279* wd:Q3918 .
+	?u wdt:P131+ ?state .
+	?state wdt:P31 wd:Q35657 .
+	?state wdt:P571 ?stateStart .
+	?u wdt:P571 ?founded .
+	FILTER (?founded < ?stateStart) .
+}
+LIMIT 10
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+#TEMPLATE={"template":"Presidents of ?country and their spouses","variables":{"?country":{"query":" SELECT ?id WHERE { ?id wdt:P31 wd:Q6256 . }"} } }
+
+SELECT ?p ?pLabel ?ppicture ?w ?wLabel ?wpicture WHERE {
+  BIND(wd:Q30 AS ?country)
+  ?country (p:P6/ps:P6) ?p.
+  ?p wdt:P26 ?w.
+  OPTIONAL {
+    ?p wdt:P18 ?ppicture.
+    ?w wdt:P18 ?wpicture.
+  }
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+SELECT ?politician ?cause ?politician_label ?cause_of_death_label 
+WHERE 
+{
+	?politician wdt:P106 wd:Q82955 .    # find items that have "occupation (P106): politician (Q82955)"
+	?politician wdt:P509 ?cause .       # with a P509 (cause of death) claim
+	?cause wdt:P279* wd:Q12078 .        # ... where the cause is a subclass of (P279*) cancer (Q12078)
+	# ?politician wdt:P39 wd:Q11696 .   # Uncomment this line to include only U.S. Presidents
+	  
+	OPTIONAL {?politician rdfs:label ?politician_label filter (lang(?politician_label) = "en") .} 
+	OPTIONAL {?cause rdfs:label ?cause_of_death_label filter (lang(?cause_of_death_label) = "en").}
+}
+ORDER BY ASC (?politician)
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?link ?linkLabel ?picture ?age
+WHERE
+{
+	?link wdt:P31 wd:Q5 ; 
+          p:P39 [ ps:P39 wd:Q19546 ; pq:P580 ?startTime ] .
+	OPTIONAL { ?link wdt:P569 ?dateOfBirth }
+	OPTIONAL { ?link wdt:P18 ?picture }
+	OPTIONAL { ?link wdt:P570 ?dateOfDeath }
+	BIND(YEAR(?dateOfDeath) - YEAR(?dateOfBirth) as ?age)
+}
+ORDER BY DESC(?startTime)
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?year ?pope1Label ?pope2Label ?pope3Label
+WHERE
+{
+  ?pope2 p:P39 [
+           ps:P39 wd:Q19546;
+           pq:P580 ?p2s;
+           pq:P582 ?p2e;
+           pq:P1365 ?pope1;
+           pq:P1366 ?pope3
+         ].
+  ?pope1 p:P39 [
+           ps:P39 wd:Q19546;
+           pq:P582 ?p1e
+         ].
+  ?pope3 p:P39 [
+           ps:P39 wd:Q19546;
+           pq:P580 ?p3s
+         ].
+  BIND(YEAR(?p2s) AS ?year).
+  FILTER(YEAR(?p2e) = ?year && YEAR(?p1e) = ?year && YEAR(?p3s) = ?year).
+}
+ORDER BY ?year
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+# All popes with number of children 
+SELECT  (SAMPLE(?father) AS ?father_) ?fatherLabel  (SAMPLE(?picture) AS ?picture_) (COUNT(?father) as ?children)
+WHERE
+{
+	?subj wdt:P22 ?father .
+  	?father wdt:P31 wd:Q5 .
+  	?father wdt:P39 wd:Q19546 .
+	OPTIONAL {
+		?father wdt:P18 ?picture .
+		}
+
+}
+GROUP BY ?fatherLabel
+ORDER BY DESC(?children)
+LIMIT 50
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT DISTINCT ?item ?itemLabel ?positionLabel ?picture ?as ?start ?end ?days
+{
+  ?item wdt:P31 wd:Q5 ;
+        wdt:P18 ?picture ;
+        p:P39 ?position_statement .
+  ?position_statement ps:P39 ?position ;
+                      pq:P580 ?start FILTER (?start >= "1815-01-01T00:00:00Z"^^xsd:dateTime) .
+  ?position wdt:P279* wd:Q15135541 .
+  OPTIONAL { ?position_statement pq:P582 ?x }
+  OPTIONAL {
+    ?position_statement pq:P794/rdfs:label ?as filter (lang(?as) = "en") .
+  }
+  bind(if(bound(?x), ?x, NOW()) as ?end )
+  bind(floor(?end - ?start) as ?days)
+} 
+ORDER BY DESC(?days) ?itemLabel
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT ?h ?hLabel ?inception ?dissolved ?coor
+WHERE
+{
+	VALUES ?countryclass { wd:Q3024240 wd:Q6256 }
+  	?h wdt:P31 ?countryclass  .
+	?h wdt:P571 ?inception .
+	OPTIONAL { ?h wdt:P576 ?dissolved } .
+	FILTER (?inception < "1755-01-01T00:00:00Z"^^xsd:dateTime)
+	FILTER (?dissolved >= "1755-01-01T00:00:00Z"^^xsd:dateTime || !Bound(?dissolved) )
+
+	OPTIONAL { ?h wdt:P625 ?coor } .
+}
+ORDER BY ?inception
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT  ?objectLabel    (YEAR(?date) as ?year) 
+        ?population     (?objectLabel as ?Location)
+WHERE
+{
+        ?object	wdt:P31 wd:Q185441 
+        ;	p:P1082 ?populationStatement .
+        ?populationStatement    ps:P1082 ?population
+        ;	pq:P585 ?date .                
+	FILTER (YEAR(?date) >= 1960)
+} 
+ORDER BY ?objectLabel ?year
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+ SELECT ?label ?coord ?place
+WHERE
+{
+   ?subj wdt:P31 wd:Q744913  .
+   ?subj wdt:P625 ?coord .
+   ?subj rdfs:label ?label filter (lang(?label) = "en")
+}
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+ SELECT  (SAMPLE(?father) AS ?father_) ?fatherLabel  (SAMPLE(?picture) AS ?picture_) (COUNT(?father) as ?children)
+WHERE
+{
+	?subj wdt:P22 ?father .
+	OPTIONAL {
+		?father wdt:P18 ?picture .
+		}
+
+}
+GROUP BY ?fatherLabel
+ORDER BY DESC(?children)
+LIMIT 50
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX dead: <http://dead>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+PREFIX injured: <http://injured>
+
+#added before 2016-10
+
+SELECT ?h ?hLabel ?location (CONCAT("injured: ",str(?injured)) as ?injuredl) (concat("dead: ",str(?dead)) as ?deadl) ?date ?image
+WHERE
+{
+        ?h wdt:P31 ?attack.  
+    values (?attack) {
+      (wd:Q18493502)
+      (wd:Q217327)
+      
+      
+    }
+    optional {    ?h wdt:P1339 ?injured . } 
+    optional {    ?h wdt:P1120 ?dead. }
+    optional {    ?h wdt:P276?/wdt:P625 ?location }
+    optional {    ?h wdt:P585 ?date }
+    optional {    ?h wdt:P18 ?image }
+
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:Timeline
+SELECT ?person ?personLabel ?date
+WHERE
+{
+  ?person wdt:P31 wd:Q5;
+          wdt:P509 wd:Q468455;
+          wdt:P570 ?date.
+}
+ORDER BY ?date
+
+####
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+select ?person ?personLabel ?personDescription ?birth ?death ?age
+WHERE
+{
+  ?person wdt:P31 wd:Q5. # instance of human
+  ?person wdt:P569 ?birth . # birth date
+  ?person wdt:P570 ?death . # death date
+  bind( year(?death)-year(?birth) as ?age ) # Make a new variable called ?age that we can use
+  filter (?age > 10 && ?age < 100) # Only find people with realistic ages  
+  filter (?birth > "1452-04-15"^^xsd:dateTime && ?death < "1519-05-02"^^xsd:dateTime) # And between these two dates # used to display a label
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+ SELECT ?thing ?thingLabel ?image
+WHERE
+{
+  ?thing wdt:P366 wd:Q132781 .
+  ?thing wdt:P18 ?image .
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?animal ?animalLabel ?died ?mannerOfDeathLabel ?image
+WHERE
+{
+  ?animal wdt:P31/wdt:P31 wd:Q16521; # instance of some taxon (does not include human)
+          wdt:P509 ?mannerOfDeath.
+  ?mannerOfDeath wdt:P279* wd:Q8454. # some subclass of capital punishment
+  OPTIONAL { ?animal wdt:P570 ?died. }
+  OPTIONAL { ?animal wdt:P18 ?image. }
+}
+ORDER BY ?died
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wdno: <http://www.wikidata.org/prop/novalue/>
+PREFIX citizenship: <http://citizenship>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+
+# persons who were stateless (country of citizenship: no value) for some time (start time and end time qualifiers)
+SELECT ?person ?personLabel ?start ?end WHERE {
+  ?person wdt:P31 wd:Q5;
+          p:P27 [
+            a wdno:P27;
+            pq:P580 ?start;
+            pq:P582 ?end
+          ].
+}
+ORDER BY DESC(?end - ?start)
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+SELECT ?h ?cause ?hl ?causel 
+WHERE 
+{
+	?h wdt:P39 wd:Q11696 .
+	?h wdt:P509 ?cause .
+	OPTIONAL {  
+		?h rdfs:label ?hl filter (lang(?hl) = "en") .
+	}
+	OPTIONAL { 
+		?cause rdfs:label ?causel filter (lang(?causel) = "en"). 
+	}
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+#added before 2016-10
+
+#defaultView:BubbleChart
+SELECT ?cid ?cause (count(*) as ?count)
+WHERE
+{
+	?pid wdt:P39 wd:Q11696 .
+	?pid wdt:P509 ?cid .
+	OPTIONAL {
+		?cid rdfs:label ?cause filter (lang(?cause) = "en") .
+	}
+}
+GROUP BY ?cid ?cause
+ORDER BY DESC(?count) ASC(?cause)
+
+####
+PREFIX psv: <http://www.wikidata.org/prop/statement/value/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT DISTINCT ?museumLabel ?museumDescription ?villeId ?villeIdLabel (?villeIdLabel AS ?ville) ?coord ?lat ?lon
+WHERE
+{
+  ?museum wdt:P539 ?museofile.  # french museofile Id
+  ?museum wdt:P131* wd:Q12130. # in Brittany
+  ?museum wdt:P131 ?villeId. #city of the museum
+  # ?object wdt:P166 wd:Q2275045 # that have french label "musées de France"
+  OPTIONAL {?museum wdt:P856 ?link.}     # official website
+  OPTIONAL {?museum wdt:P625 ?coord .} # geographic coord
+  OPTIONAL {
+    ?museum p:P625 ?statement.
+    ?statement psv:P625 ?node.
+    ?node wikibase:geoLatitude ?lat.
+    ?node wikibase:geoLongitude ?lon.
+   } #french label
+}
+ORDER BY  ?villeIdLabel
+
+####
+PREFIX psv: <http://www.wikidata.org/prop/statement/value/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#All museums (including subclass of museum) in Barcelona with coordinates
+SELECT DISTINCT ?item ?name ?coord ?lat ?lon
+WHERE
+{
+ ?item wdt:P131* wd:Q1492 .
+ ?item wdt:P31/wdt:P279* wd:Q33506 .
+ ?item wdt:P625 ?coord .
+ ?item p:P625 ?coordinate .
+ ?coordinate psv:P625 ?coordinate_node .
+ ?coordinate_node wikibase:geoLatitude ?lat .
+ ?coordinate_node wikibase:geoLongitude ?lon .
+ SERVICE wikibase:label {
+ bd:serviceParam wikibase:language "ca" .
+ ?item rdfs:label ?name
+ }
+}
+ORDER BY ASC (?name)
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:Map
+SELECT ?item ?itemLabel ?coordinates
+WHERE
+{
+  ?item wdt:P31/wdt:P279* wd:Q33506 ;
+        wdt:P131 wd:Q12892 ;
+        wdt:P625 ?coordinates .
+  }
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?character ?characterLabel (COUNT(?actor) AS ?count)
+WHERE
+{
+  {
+    SELECT DISTINCT ?character ?actor
+    WHERE {
+      ?film p:P161 [
+        ps:P161 ?actor;
+        pq:P453 ?character
+      ].
+      #?character wdt:P31 wd:Q5. # uncomment to filter for real people
+    }
+  }
+}
+GROUP BY ?character ?characterLabel
+ORDER BY DESC(?count)
+LIMIT 25
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?play ?playLabel
+WHERE 
+{
+	?play wdt:P31 wd:Q25379 .
+}
+LIMIT 1000
+
+####
+PREFIX defaultView: <http://defaultView>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+PREFIX available: <http://available>
+
+#added before 2016-10
+
+#defaultView:ImageGrid
+SELECT ?human ?humanLabel ?yob ?yod ?picture
+WHERE
+{
+	?human wdt:P31 wd:Q5
+	; wdt:P106 wd:Q33999 .
+	?human wdt:P18 ?picture .
+	OPTIONAL { ?human wdt:P569 ?dob . ?human wdt:P570 ?dod }.
+	BIND(YEAR(?dob) as ?yob) . #if available: year
+	BIND(YEAR(?dod) as ?yod) .
+}
+LIMIT 88
+
+####
+PREFIX schema: <http://schema.org/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+SELECT distinct ?writer ?place (COUNT(DISTINCT ?sitelink) as ?linkcount)
+WHERE
+{
+  {?s wdt:P106 wd:Q36180 .} UNION { ?s wdt:P106 wd:Q482980 . } UNION { ?s wdt:P106 wd:Q49757 . }
+  ?s wdt:P27 ?pl .
+  ?sitelink schema:about ?s .
+  OPTIONAL {
+     ?s rdfs:label ?writer filter (lang(?writer) = "en").
+   }
+    OPTIONAL {
+     ?pl rdfs:label ?place filter (lang(?place) = "en").
+   }
+} GROUP BY ?place ?writer HAVING (?linkcount > 10) ORDER BY DESC(?linkcount)
+
+####
+PREFIX defaultView: <http://defaultView>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+#defaultView:Map
+SELECT ?place ?placeLabel ?subj ?label ?coord ?birthyear
+WHERE
+{
+   ?subj wdt:P106 wd:Q49757 .
+   ?subj wdt:P19 ?place .
+   ?place wdt:P17 wd:Q183 .
+   ?place wdt:P625 ?coord .
+   ?subj rdfs:label ?label filter (lang(?label) = "en")
+   OPTIONAL { ?subj wdt:P569 ?dob .}.
+	BIND(YEAR(?dob) as ?birthyear).
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+SELECT ?subj ?label ?coord ?place
+WHERE
+{
+  {?subj wdt:P31 wd:Q571 } UNION {?subj wdt:P31 wd:Q7725634}.
+   ?subj wdt:P577 ?date FILTER (?date < "1830-01-01T00:00:00Z"^^xsd:dateTime) .
+  OPTIONAL { {?subj wdt:P291 ?place} UNION {?subj wdt:P840 ?place }.
+    ?place wdt:P625 ?coord }.
+   ?subj rdfs:label ?label filter (lang(?label) = "en")
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+ SELECT ?book ?bookLabel ?authorLabel ?genre_label ?series_label ?publicationDate
+WHERE
+{
+	?author ?label "Ernest Hemmingway"@en .
+	?book wdt:P31 wd:Q571 .
+	?book wdt:P50 ?author .
+	OPTIONAL {
+		?book wdt:P136 ?genre .
+		?genre rdfs:label ?genre_label filter (lang(?genre_label) = "en").
+	}
+	OPTIONAL {
+		?book wdt:P179 ?series .
+		?series rdfs:label ?series_label filter (lang(?series_label) = "en").
+	}
+	OPTIONAL {
+		?book wdt:P577 ?publicationDate .
+	}
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+SELECT ?s ?desc (COUNT(DISTINCT ?label) as ?labelcount)
+WHERE
+{
+  ?s wdt:P31 wd:Q7725634 .
+  ?s rdfs:label ?label .
+  OPTIONAL {
+     ?s rdfs:label ?desc filter (lang(?desc) = "en").
+   }
+ } GROUP BY ?s ?desc ORDER BY DESC(?labelcount)
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+SELECT ?s ?desc
+WHERE
+{
+  ?s wdt:P279 wd:Q7725634 .
+  OPTIONAL {
+     ?s rdfs:label ?desc filter (lang(?desc) = "en").
+   }
+ }
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+SELECT ?s ?desc (COUNT(DISTINCT ?label) as ?labelcount)
+WHERE
+{
+  ?s wdt:P31 wd:Q37484 .
+  ?s rdfs:label ?label .
+  OPTIONAL {
+     ?s rdfs:label ?desc filter (lang(?desc) = "en").
+   }
+ } GROUP BY ?s ?desc ORDER BY DESC(?labelcount)
+
+####
+PREFIX schema: <http://schema.org/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+#old method for sitelink count
+SELECT ?s ?desc (COUNT(DISTINCT ?sitelink) as ?linkcount)
+WHERE
+{
+  ?s wdt:P31 wd:Q37484 .
+  ?sitelink schema:about ?s .
+  OPTIONAL {
+     ?s rdfs:label ?desc filter (lang(?desc) = "en").
+   }
+ } GROUP BY ?s ?desc ORDER BY DESC(?linkcount)
+
+####
+PREFIX schema: <http://schema.org/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+#old method for sitelink count
+SELECT ?s ?desc (COUNT(DISTINCT ?sitelink) as ?linkcount)
+WHERE
+{
+  ?s wdt:P31 wd:Q571 .
+  ?sitelink schema:about ?s .
+  OPTIONAL {
+     ?s rdfs:label ?desc filter (lang(?desc) = "en").
+   }
+ } GROUP BY ?s ?desc ORDER BY DESC(?linkcount)
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?poetLabel ?image ?yob ?yod ?start ?end ?monarchLabel
+WHERE
+{
+  ?poet p:P39 ?positionStat.
+  ?positionStat ps:P39 wd:Q877838;
+                pq:P580 ?start;
+                pq:P748 ?monarch.
+  OPTIONAL {
+    ?positionStat pq:P582 ?end.
+  }
+  OPTIONAL {
+    ?poet wdt:P18 ?image;
+          wdt:P569 ?dob;
+          wdt:P570 ?dod.
+  }
+  BIND(YEAR(?dob) AS ?yob).
+  BIND(YEAR(?dod) AS ?yod).
+}
+ORDER BY ?start DESC(?monarchLabel)
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT DISTINCT ?digitalLibrary  ?digitalLibraryLabel ?website
+WHERE
+{
+	?digitalLibrary wdt:P31 wd:Q212805
+	; wdt:P856 ?website .
+} 
+ORDER BY ?digitalLibraryLabel
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT ?nominee ?nomineeLabel (SAMPLE(?citizenshipLabel) AS ?country) (COUNT(DISTINCT ?year) as ?timesNominated)
+WHERE
+{
+    BIND( wd:Q37922 as ?prize ) 
+    ?nominee p:P1411 [ ps:P1411 ?prize; pq:P585 ?time ]
+    BIND( year(?time) as ?year )                    
+    OPTIONAL {  
+      ?nominee wdt:P27 [ rdfs:label ?citizenshipLabel ] filter (lang(?citizenshipLabel) = "en") .
+    }
+    FILTER NOT EXISTS { ?nominee wdt:P166 ?prize . }
+}
+GROUP BY ?nominee ?nomineeLabel
+ORDER BY DESC(?timesNominated) ?nomineeLabel
+
+####
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+SELECT DISTINCT ?item WHERE
+{
+  ?item wdt:P31 wd:Q5 ;
+  wdt:P106/wdt:P279* wd:Q482980 .
+  ?item wdt:P570 ?time0 .
+  FILTER((?time0 >= "1945-01-01T00:00:00Z"^^xsd:dateTime) && (?time0 <= "1946-01-01T00:00:00Z"^^xsd:dateTime))
+}
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+ SELECT ?tonalityLabel (COUNT(?tonalityLabel) as ?count)
+WHERE
+{
+  ?work wdt:P826 ?tonality.
+}
+GROUP BY ?tonalityLabel
+ORDER BY DESC(?count)
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:Map
+SELECT ?item ?itemLabel ?_coordinate_location ?_image WHERE {
+  ?item wdt:P106 wd:Q36834.
+   ?item wdt:P19 ?place.
+   ?place wdt:P625  ?_coordinate_location. 
+  ?item wdt:P18 ?_image. 
+}
+
+####
+PREFIX straightforward: <http://straightforward>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+# Each composer’s most used tonality, with number of works in that tonality.
+# (If this is ambiguous – multiple tonalities with the same number – there are multiple results for one composer.)
+# 
+# The SPARQL for this is an evil perversion of three subqueries (one of them nested in another).
+# To understand it, you have to go inside out… follow the numbers.
+
+SELECT ?composerLabel ?tonalityLabel ?count
+WHERE
+{
+  {
+    # 4. Group again, this time just by the composer.
+    #    We also select the highest count of a tonality.
+    #    Notice that we don’t know what tonality this count is associated with – we’ll get to that.
+    #    So now we have each composer, along with how often they used whatever tonality they used most.
+    SELECT ?composer (MAX(?count) AS ?count_)
+    WHERE
+    {
+      {
+        # 2. Group by composer and tonality, so that for each composer and tonality, we get a count of how often the composer used this tonality.
+        SELECT ?composer ?tonality (COUNT(?composition) AS ?count)
+        WHERE
+        {
+          # 1. Extremely straightforward: the ?composition has the composer ?composer and the tonality ?tonality.
+          #    (I’m not bothering with any “instance of” because the presence of these two properties is a sufficient indicator of ?composition being a composition.)
+          ?composition wdt:P86 ?composer;
+                       wdt:P826 ?tonality.
+        }
+        GROUP BY ?composer ?tonality
+        HAVING(?count > 1) # 3. Limit that to counts > 1, because using a tonality once is hardly “most used”.
+      }
+    }
+    GROUP BY ?composer
+  }
+  {
+    # 6. Identical to 2.
+    SELECT ?composer ?tonality (COUNT(?composition) AS ?count)
+    WHERE
+    {
+      # 5. Identical to 1.
+      ?composition wdt:P86 ?composer;
+                   wdt:P826 ?tonality.
+    }
+    GROUP BY ?composer ?tonality
+    HAVING(?count > 1) # 7. Identical to 3.
+  }
+  # 8. That’s it. Wait, what?
+  #    From 4, we now have ?composer, any composer, and ?count, the count of how often they used whatever tonality they used most.
+  #    From 6, we also have a ?composer, as well as a ?tonality, and the count of how often they used that particular tonality.
+  #    The trick is that ?composer and ?count are the same variable in each subquery, and so now, when the two subqueries are joined,
+  #    we select only that ?tonality from 6 where the ?composer and the ?count are identical to those from 4 –
+  #    that is, where this tonality was used as often as the composer’s most-used tonality.
+  #    In other words, this must *be* the composer’s most-used tonality (except when there are multiple tonalities with the same count).
+}
+ORDER BY DESC(?count) # 9. Order by count (highest first), because the result isn’t very meaningful for low counts (many compositions aren’t on Wikidata or don’t have a tonality statement).
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?song ?songLabel ?code
+WHERE
+{
+  ?song wdt:P1236 ?code.
+}
+ORDER BY DESC(STRLEN(REPLACE(?code, " ", "")))
+LIMIT 10
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX psv: <http://www.wikidata.org/prop/statement/value/>
+
+#added before 2016-10
+
+   # Query to find all musicians who have already died 
+   # calculate their age (full years) at death
+   # count how many of them died at each age
+
+    SELECT ?age  (COUNT (DISTINCT ?a) AS ?count) WHERE {
+        ?a wdt:P31 wd:Q5 . #instance of human
+        ?a wdt:P106/wdt:P279 wd:Q639669 . #occupation a subclass of musician
+        ?a p:P569/psv:P569 ?birth_date_node . 
+        ?a p:P570/psv:P570 ?death_date_node .
+        ?birth_date_node wikibase:timeValue ?birth_date .
+        ?death_date_node wikibase:timeValue ?death_date .
+        FILTER(?age > 10 && ?age < 100) . #ignore outlyers, several of which are probably errors
+        BIND( year(?death_date) - year(?birth_date) - if(month(?death_date)<month(?birth_date) || (month(?death_date)=month(?birth_date) && day(?death_date)<day(?birth_date)),1,0) as ?age )
+        # calculate the age, precisely to the day (times and timezones ignored)
+    } 
+	GROUP BY ?age
+    ORDER BY ?age
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+select distinct ?item ?itemLabel ?itemDescription where { 
+    ?item wdt:P106/wdt:P279* wd:Q639669 .
+    ?item wdt:P19 wd:Q34370 .
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+ SELECT DISTINCT ?item  ?Titre ?createur (year(?date) as ?AnneeCreation) ?image ?coord 
+WHERE
+{
+   ?item wdt:P31/wdt:P279* wd:Q860861.                    # sculpture
+   ?item wdt:P136 wd:Q557141 .                            # genre : art public
+   {?item wdt:P131 wd:Q90.}                               # ... située dans Paris
+   UNION
+   {?item wdt:P131 ?arr.                                  # ... ou dans un arrondissement de Paris  
+   ?arr wdt:P131 wd:Q90. } 
+   ?item rdfs:label ?Titre filter (lang(?Titre) = "fr").  # Titre
+  
+   OPTIONAL {?item wdt:P170 ?Qcreateur.                   # créateur/créatrice (option)
+   ?Qcreateur rdfs:label ?createur filter (lang(?createur) = "fr") .}
+   OPTIONAL {?item wdt:P571 ?date.}                       # date de création (option)
+   OPTIONAL {?item wdt:P18  ?image.}                      # image (option)
+   OPTIONAL {?item wdt:P625 ?coord.}                      # coordonnées géographiques (option)
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+#added before 2016-10
+
+#defaultView:Map
+SELECT ?label ?coord ?subj
+WHERE
+{
+   ?subj wdt:P170 wd:Q5593 .
+  OPTIONAL {?subj wdt:P276 ?loc .
+    ?loc wdt:P625 ?coord } .    
+   ?subj rdfs:label ?label filter (lang(?label) = "en")
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT DISTINCT ?item ?itemLabel ?instanceLabel ?creatorLabel (YEAR(?date) as ?year) ?image
+WHERE
+{
+  ?item wdt:P180 wd:Q243 .
+  ?item wdt:P31 ?instance .
+  OPTIONAL { ?item wdt:P170 ?creator }
+  OPTIONAL { ?item wdt:P571 ?date }
+  OPTIONAL { ?item wdt:P18 ?image }
+}
+ORDER BY ?itemLabel
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+#added before 2016-10
+#defaultView:ImageGrid
+SELECT * 
+WHERE
+{
+  ?item wdt:P31 wd:Q3305213 .
+  ?item wdt:P170 wd:Q34661 .
+  ?item wdt:P18 ?pic .
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#Map of all the paintings for which we know a location with the count per location
+#defaultView:Map
+SELECT ?locationLabel ?coord (count(*) as ?count)
+WHERE
+{
+    ?painting wdt:P31 wd:Q3305213 . 
+    ?painting wdt:P276 ?location .
+	?location wdt:P625 ?coord
+       
+}
+GROUP BY ?locationLabel ?coord
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+
+SELECT
+  ?item
+  (SAMPLE (?itemL) AS ?title)
+  (SAMPLE (?y) AS ?year)
+  (SAMPLE (?typeL) AS ?type)
+  (group_concat(distinct ?materialL ; separator = ", ") as ?materials)
+  (SAMPLE (?collectionL) AS ?collection)
+  (SAMPLE (?img) AS ?image)
+{
+  SELECT ?item ?itemL (YEAR(?date) AS ?y) ?typeL ?collectionL ?img ?materialL
+  WHERE {
+    ?item wdt:P179 wd:Q471379 .
+    ?item wdt:P18 ?img .
+    ?item wdt:P571 ?date .
+    ?item wdt:P31 ?instance .
+    ?item rdfs:label ?itemL filter (lang(?itemL) = "en").
+    ?instance rdfs:label ?typeL filter (lang(?typeL) = "en").
+    OPTIONAL {
+      ?item wdt:P195 ?collection .
+      ?collection rdfs:label ?collectionL filter (lang(?collectionL) = "en").
+    }
+    OPTIONAL {
+      ?item wdt:P186 ?material .
+      ?material rdfs:label ?materialL filter (lang(?materialL) = "en").
+    }
+  }
+}
+GROUP BY ?item 
+ORDER BY ?year ?item ?itemLabel
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+#added before 2016-10
+
+SELECT DISTINCT ?depicts (SAMPLE(?dL) AS ?depictsLabel) (COUNT(DISTINCT ?item) AS ?count)
+WHERE
+{
+	?item wdt:P180 ?depicts .
+	OPTIONAL { ?depicts rdfs:label ?dL	filter (lang(?dL) = "en")  }
+}
+GROUP BY ?depicts
+ORDER BY DESC(?count) ?depictsLabel
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT DISTINCT
+  ?item
+  ?itemLabel
+  ?communeLabel
+  (group_concat(distinct ?merimee ; separator = ", ") as ?merimee_)
+  ?coords
+  ?image
+WHERE
+{
+  {
+    SELECT DISTINCT ?item ?merimee WHERE {
+      ?item wdt:P1435/wdt:P279* wd:Q916475 .
+      ?item p:P1435 ?heritage_statement .
+      FILTER NOT EXISTS { ?heritage_statement pq:P582 ?end . }
+      ?item wdt:P380 ?merimee.
+    }
+    ORDER BY ?merimee
+  }
+  ?item wdt:P131/wdt:P131* wd:Q3068 .
+  ?item wdt:P131 ?commune .
+  OPTIONAL { ?item wdt:P625 ?coords . }
+  OPTIONAL { ?item wdt:P18 ?image . }
+}
+GROUP BY ?item ?itemLabel ?communeLabel ?coords ?image
+ORDER BY ?communeLabel ?itemLabel
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT DISTINCT ?item ?itemLabel ?countryLabel ?placeLabel (YEAR(?date) as ?year) ?coords ?image
+WHERE
+{
+  ?item wdt:P31/wdt:P279* wd:Q860861 .
+  ?item wdt:P170 wd:Q123454 .
+  OPTIONAL { ?item wdt:P17 ?country . }
+  OPTIONAL { ?item wdt:P131 ?place . }
+  OPTIONAL { ?item wdt:P571 ?date . }
+  OPTIONAL { ?item wdt:P625 ?coords . }
+  OPTIONAL { ?item wdt:P18 ?image . }
+}
+ORDER BY ?itemLabel ?placeLabel
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+# Make a list of the most used authority control properties for works for paintings
+SELECT ?propertyLabel ?propertyDescription (COUNT(?propertyclaim) AS ?count) WHERE { 
+  ?item wdt:P31 wd:Q3305213 .
+
+  ?property wikibase:propertyType wikibase:ExternalId .
+  ?property wdt:P31 wd:Q19833377 .
+  ?property wikibase:claim ?propertyclaim .
+
+  ?item ?propertyclaim [] .
+} GROUP BY ?propertyLabel ?propertyDescription ORDER BY DESC (?count)
+LIMIT 100
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+# Make a list of the most used authority control properties for people for painters
+SELECT ?propertyLabel ?propertyDescription ?count WHERE { 
+	{
+		select ?propertyclaim (COUNT(*) AS ?count) where {
+			?item wdt:P106 wd:Q1028181 . 
+			?item wdt:P31 wd:Q5 .
+			?item ?propertyclaim [] .
+		} group by ?propertyclaim 
+	}
+	?property wikibase:propertyType wikibase:ExternalId .
+	?property wdt:P31 wd:Q19595382 .
+	?property wikibase:claim ?propertyclaim .
+} ORDER BY DESC (?count)
+LIMIT 100
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+# This returns 10 random painting images
+# RAND() returns one random number (cached like every query). 
+# The string representation of the item and the random number are hashed.
+# This will give a complete different ordering every time you have a different random number.
+# You can change the LIMIT if you want to trigger a new random number
+#defaultView:ImageGrid
+SELECT ?item ?itemLabel ?image (SHA512(CONCAT(str(?item),str(RAND()))) as ?random)  WHERE {
+  ?item wdt:P31 wd:Q3305213.
+  ?item wdt:P18 ?image.
+} ORDER BY ?random
+LIMIT 10
+
+####
+PREFIX defaultView: <http://defaultView>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#Paintings by anonymous painters, but are related to some other painter
+#defaultView:BubbleChart
+SELECT ?creatorqualifierLabel (COUNT(?creatorqualifier) AS ?count) WHERE {
+  ?item wdt:P31 wd:Q3305213 .
+  ?item wdt:P170 wd:Q4233718 .
+  OPTIONAL { ?item p:P170 ?creatorstatement .
+             ?creatorstatement rdf:type	wikibase:BestRank .
+             ?creatorstatement ?qualifier ?creatorqualifier .
+             ?qualifierproperty wikibase:qualifier ?qualifier }          
+  } GROUP BY ?creatorqualifierLabel
+HAVING (?count > 2)
+LIMIT 20000
+
+####
+PREFIX defaultView: <http://defaultView>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#Paintings by anonymous painters, types of relationships with other painters
+#defaultView:BubbleChart
+SELECT ?qualifierpropertyLabel (COUNT(?creatorqualifier) AS ?count) WHERE {
+  ?item wdt:P31 wd:Q3305213 .
+  ?item wdt:P170 wd:Q4233718 .
+  OPTIONAL { ?item p:P170 ?creatorstatement .
+             ?creatorstatement rdf:type	wikibase:BestRank .
+             ?creatorstatement ?qualifier ?creatorqualifier .
+             ?qualifierproperty wikibase:qualifier ?qualifier }          
+  } GROUP BY ?qualifierpropertyLabel
+HAVING (?count > 2)
+LIMIT 2000
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+
+# Get 10 paintings that have a link to RKDimages (P350)
+# Use the formatter URL (P1630) to construct the links to RKDimages
+#defaultView:ImageGrid
+SELECT ?item ?image ?rkdurl  WHERE {
+  wd:P350 wdt:P1630 ?formatterurl .
+  ?item wdt:P31 wd:Q3305213 .
+  ?item wdt:P18 ?image .
+  ?item wdt:P350 ?rkdid .
+  BIND(IRI(REPLACE(?rkdid, '^(.+)$', ?formatterurl)) AS ?rkdurl).
+  } LIMIT 10
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+#Locations of breweries in Germany
+#defaultView:Map
+select ?breweryLabel ?breweryDescription ?coord
+WHERE
+{
+	?brewery wdt:P31/wdt:P279* wd:Q131734 ;
+		wdt:P17 wd:Q183 ;
+		wdt:P625 ?coord .
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:ImageGrid
+SELECT ?item ?itemLabel ?_image
+WHERE
+{
+  ?item wdt:P279 wd:Q28803.
+OPTIONAL { ?item wdt:P18 ?_image. }
+}
+LIMIT 100
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT ?sandwich ?ingredient ?sandwichLabel ?ingredientLabel
+WHERE
+{
+  ?sandwich wdt:P31?/wdt:P279* wd:Q28803;
+            wdt:P527 ?ingredient.
+  MINUS { ?ingredient wdt:P279* wd:Q7802. }
+}
+ORDER BY UCASE(STR(?sandwichLabel))
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?item ?itemLabel ?placeLabel ?coords ?image
+WHERE
+{
+  ?item wdt:P31 wd:Q2977 .
+  ?item wdt:P131 ?place .
+  ?place wdt:P131 wd:Q90 .
+  OPTIONAL { ?item wdt:P625 ?coords . }
+  OPTIONAL { ?item wdt:P18 ?image . }
+} ORDER BY ?placeLabel ?itemLabel
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX http: <http://http>
+PREFIX genre: <http://genre>
+
+#added before 2016-10
+
+SELECT DISTINCT
+  ?item
+  (SAMPLE (?titleL) AS ?title)
+  (group_concat(distinct ?creatorL ; separator = ", ") as ?creator)
+  (group_concat(distinct ?genreL ; separator = ", ") as ?genre)
+  (group_concat(distinct ?placeL ; separator = ", ") as ?place)
+  (group_concat(distinct ?arr ; separator = ", ") as ?arrondissement)
+  (SAMPLE (?img) AS ?image)
+  (SAMPLE (?coord) AS ?coordinates)
+WHERE
+{
+  SELECT ?item ?titleL ?creatorL ?genreL ?placeL ?arr ?img ?coord
+  WHERE {
+    # selecting items...
+    {
+      # items in Paris...
+      ?item wdt:P131 wd:Q90 .
+    } UNION {
+      # ...or in an arrondissement of Paris
+      ?item wdt:P131/wdt:P131* wd:Q90 .
+    }
+    # genre: public art
+    ?item wdt:P136 wd:Q557141 .
+    
+    # creators
+    OPTIONAL {
+      ?item wdt:P170 ?c.
+      ?c rdfs:label ?creatorL filter (lang(?creatorL) = "fr") .
+    }
+    
+    #genre
+    OPTIONAL {
+      {
+        ?item wdt:P136 ?g .
+        FILTER ( STR(?g) != 'http://www.wikidata.org/entity/Q557141') 
+      } UNION {
+        ?item wdt:P31 ?g .
+      }
+      ?g rdfs:label ?genreL filter (lang(?genreL) = "fr") .
+    }
+    
+    # place
+    OPTIONAL {
+      ?item wdt:P276 ?p .
+      ?p rdfs:label ?placeL filter (lang(?placeL) = "fr") .
+    }
+    
+    # arrondissement
+    OPTIONAL {
+      ?item wdt:P131 ?a .
+      ?a wdt:P131 wd:Q90 .
+      ?a rdfs:label ?arrL filter (lang(?arrL) = "fr").
+      BIND(REPLACE(?arrL, '^([0-9]+).*$', "$1", "si") AS ?arr) 
+    }
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+SELECT ?work ?title
+WHERE
+{
+  ?work wdt:P31/wdt:P279* wd:Q838948;
+        wdt:P1476 ?title.
+  FILTER(REGEX(?title, "^\\w*(\\w{3})(\\W+\\w*\\1)+$", "i") && !REGEX(?title, "^(\\w+)(\\W+\\1)+$", "i")).
+}
+ORDER BY STR(?title)
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+SELECT ?work ?title
+WHERE
+{
+  ?work wdt:P31/wdt:P279* wd:Q838948;
+        wdt:P1476 ?title.
+  FILTER(REGEX(STR(?title), "^(\\p{L})\\w+(?:\\W+\\1\\w+){2,}$", "i")).
+}
+ORDER BY STR(?title)
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?place ?placeLabel (COUNT(*) AS ?count) WHERE {
+  ?item wdt:P136 wd:Q557141 .
+  ?item wdt:P131 ?place .
+}
+GROUP BY ?place ?placeLabel
+ORDER BY DESC(?count) ?placeLabel
+
+####
+PREFIX defaultView: <http://defaultView>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX http: <http://http>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:Map
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+SELECT ?creator ?placebirthLabel ?geoloc where {
+      ?item wdt:P31/wdt:P279* wd:Q838948 .  # œuvre d’art et ss-classe 
+  ?item wdt:P608 wd:Q20980830. # du projet Europeana 280
+  ?item wdt:P170 ?creator. # créateur 
+	?creator wdt:P19 ?placebirth. # lieu de naissance 
+             ?placebirth wdt:P625 ?geoloc . #coordonnées géo
+       
+         
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT DISTINCT ?women ?womenLabel
+WHERE
+{
+       ?women wdt:P31 wd:Q5 .
+       ?women wdt:P21 wd:Q6581072 . 
+       ?women wdt:P106/wdt:P279* wd:Q483501 . # artists
+}
+LIMIT 500
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX defaultView: <http://defaultView>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#defaultView:Map
+SELECT ?item ?itemLabel ?_coordinate_location ?_image WHERE {
+  ?item wdt:P31/wdt:P279* wd:Q1370598.
+   ?item wdt:P625 ?_coordinate_location. 
+  ?item wdt:P18 ?_image. 
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?q ?qLabel
+WHERE
+{
+	?q wdt:P31 wd:Q15841920.
+
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT distinct ?race ?raceLabel ?musherLabel
+WHERE
+{
+	{ ?race wdt:P31/wdt:P279* wd:Q1968664 . } 
+	UNION { ?race wdt:P31/wdt:P641* wd:Q1968664 . }
+	?race p:P710 ?musherS . 	#here we have a full statement, not a value
+	?musherS ps:P710 ?musher . 	#here we get the value
+	FILTER NOT EXISTS { ?musherS pq:P1352 ?rank }
+	FILTER NOT EXISTS { ?musherS pq:P793 ?event } 
+}
+ORDER BY ?raceLabel
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+SELECT ?l 
+WHERE {
+	wd:Q5571382 ?p wd:Q223243 .
+	?property ?ref ?p .
+	?property a wikibase:Property .
+	?property rdfs:label ?l FILTER (lang(?l) = "en")
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+select distinct ?musher ?musherLabel
+where {
+  { ?musher wdt:P31 wd:Q5 .
+    ?musher wdt:P106 wd:Q500097 . 
+    ?musher wdt:P21 wd:Q6581072}
+}
+
+####
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX p: <http://www.wikidata.org/prop/>
+
+#added before 2016-10
+
+SELECT ?entity ?desc (year(?real_year) as ?year)  WHERE {
+  
+  wd:Q11571 p:P166 ?statement.
+  ?statement ps:P166 ?entity.
+  ?statement pq:P585 ?real_year. 
+  
+  OPTIONAL {
+     ?entity rdfs:label ?desc.
+     FILTER((LANG(?desc)) = "en")
+  }
+ 
+}
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+#added before 2016-10
+
+SELECT *
+WHERE
+{
+   ?disease ?p ?o ;
+            wdt:P699 ?doid.
+   ?o owl:sameAs ?sa .
+}
+
+####
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX pr: <http://www.wikidata.org/prop/reference/>
+
+SELECT DISTINCT ?date_range ?date_update (count(?disease) as ?counts)
+                (GROUP_CONCAT(?disease ;separator = "; ") as ?diseases)
+                (GROUP_CONCAT(?do_id ;separator = "; ") as ?doids)
+{
+  ?disease p:P699/prov:wasDerivedFrom/pr:P813 ?date_update ;
+           wdt:P699 ?do_id .
+  BIND (now() - ?date_update as ?date_range) 
+  FILTER (?date_range > 31)
+}
+GROUP BY ?date_range ?date_update
+ORDER BY DESC(?counts)
+
+####
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX pr: <http://www.wikidata.org/prop/reference/>
+
+#added before 2016-10
+
+SELECT DISTINCT ?date_range ?date_update (count(?gene) as ?counts) (GROUP_CONCAT(?gene ;separator = "; ") as ?genes)  (GROUP_CONCAT(?ncbi_gene ;separator = "; ") as ?gene_ids) WHERE {
+  ?gene p:P351 ?ncbigene ;
+           wdt:P351 ?ncbi_gene .
+  ?ncbigene prov:wasDerivedFrom ?derivedFrom  .
+  ?derivedFrom pr:P813 ?date_update .
+  BIND (now() - ?date_update as ?date_range) 
+  FILTER (?date_range > 31)
+  }
+GROUP BY ?date_range ?date_update
+ORDER BY DESC(?counts)
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+#added before 2016-10
+
+
+SELECT * WHERE {
+  {
+    SELECT ?id (COUNT(?obj) AS ?count) (GROUP_CONCAT(?obj; SEPARATOR = " , ") AS ?items) WHERE { ?obj wdt:P345 ?id. }
+    GROUP BY ?id
+  }
+  FILTER(?count > 1)
+}
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+#added before 2016-10
+
+SELECT ?x WHERE {
+  ?x wdt:P131 ?x .
+}
+
+####
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+SELECT ?h ?date 
+WHERE 
+{
+	?h wdt:P31 wd:Q5 .
+	?h wdt:P569 ?date .
+	OPTIONAL {?h wdt:P570 ?d } 
+	FILTER (?date < "1880-01-01T00:00:00Z"^^xsd:dateTime)
+	FILTER (!bound(?d))
+}
+LIMIT 100
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+#added before 2016-10
+SELECT ?entity ?claim ?prop 
+WHERE 
+{
+	?prop wdt:P31 wd:Q15720608 .
+	?prop wikibase:reference ?propClaim .
+	?ref ?propClaim ?o .
+	?statement prov:wasDerivedFrom ?ref .
+	?entity ?claim ?statement .
+}
+LIMIT 100
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX psv: <http://www.wikidata.org/prop/statement/value/>
+
+#added before 2016-10
+
+SELECT ?item ?body ?globe
+WHERE {
+?item wdt:P376 ?body .
+?item p:P625/psv:P625/wikibase:geoGlobe ?globe .
+filter (?globe != ?body) .
+} LIMIT 30
+
+####
+PREFIX hint: <http://www.bigdata.com/queryHints#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+
+#added before 2016-10
+SELECT ?property ?alias ?occurences 
+WHERE
+{
+  hint:Query hint:optimizer "None" .
+
+  {
+    SELECT ?alias (COUNT (?alias) as ?occurences) WHERE {	
+      ?tmp a wikibase:Property .
+      ?tmp skos:altLabel ?alias FILTER (LANG (?alias) = "en")
+    } GROUP BY ?alias
+  }
+
+  ?property a wikibase:Property .
+  ?property skos:altLabel ?alias FILTER (?occurences > 1) .
+}
+ORDER BY ?alias
+
+####
+PREFIX schema: <http://schema.org/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT DISTINCT ?item ?itemLabel
+WHERE
+{
+	?item wdt:P106 wd:Q33999 .
+	?item wdt:P21 wd:Q6581072 .
+	OPTIONAL { ?item schema:description ?itemDescription  }
+	FILTER (!BOUND(?itemDescription))
+	?item wdt:P31 wd:Q5 .
+}
+LIMIT 111
+
+####
+PREFIX schema: <http://schema.org/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT ?item ?itemLabel (COUNT(distinct ?sitelink) as ?count)
+WHERE
+{
+	?item wdt:P31 wd:Q5 .
+	?item wdt:P27 wd:Q142 .
+	?sitelink schema:about ?item .
+	FILTER EXISTS { ?wen schema:about ?item . ?wen schema:inLanguage "en" }
+	FILTER NOT EXISTS { ?wfr schema:about ?item . ?wfr schema:inLanguage "fr" }
+}
+GROUP BY ?item ?itemLabel 
+ORDER BY DESC(?count)
+
+####
+PREFIX hint: <http://www.bigdata.com/queryHints#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+SELECT ?wdLabel ?wdPLabel ?valueLabel ?wd ?wdP ?wds ?value 
+WHERE
+{
+	hint:Query hint:optimizer "None" .
+	?wds wikibase:rank wikibase:DeprecatedRank .
+	?wd ?p ?wds .
+	?wds ?v ?value .
+	?wdP wikibase:statementProperty ?v .
+	?wdP wikibase:claim ?p .
+
+}
+LIMIT 100
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+
+# Actors whose Spanish label ends with “ (actor)”.
+# This is almost certainly imported from the Wikipedia label, which needs to be unique (distinguish between John Doe the actor, John Doe the author, etc.).
+# Wikidata labels have no such restrictions, and therefore should contain no such disambiguatory additions.
+# Most likely, all these “ (actor)” suffixes can be removed.
+# (This concept obviously applies equally to other professions and languages.)
+SELECT ?person ?label (LANG(?label) AS ?lang)
+WHERE
+{
+  ?person wdt:P31 wd:Q5;
+          wdt:P106 wd:Q33999;
+          rdfs:label ?label.
+  FILTER(LANG(?label) = "es").
+  FILTER(STRENDS(?label, " (actor)")).
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+#added before 2016-10
+
+SELECT ?item ?label
+WHERE
+{
+  ?item rdfs:label ?label.
+  FILTER CONTAINS(?label, "&quot;").
+}
+LIMIT 1
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+
+SELECT ?person ?label (LANG(?label) AS ?lang)
+WHERE
+{
+  ?person wdt:P31 wd:Q5;
+          rdfs:label ?label.
+  FILTER(LANG(?label) IN ("en", "es", "fr", "de")). # tweak to taste
+  FILTER(CONTAINS(?label, "(")).
+}
+LIMIT 10
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?weapon ?weaponLabel
+WHERE
+{
+  ?weapon wdt:P31/wdt:P279* wd:Q728.
+}
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?country ?countryLabel ?population
+WHERE
+{
+  ?country wdt:P1082 ?population.
+  FILTER(?population - ROUND(?population) != 0).
+}
+ORDER BY ?population
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?item ?country ?itemLabel ?countryLabel
+WHERE
+{
+  ?item wdt:P17 ?country.
+  MINUS { ?country wdt:P31/wdt:P279* wd:Q7275. }     # excludes normal countries
+  MINUS { ?country wdt:P31/wdt:P279* wd:Q183366. }   # excludes Scotland
+  MINUS { ?country wdt:P31/wdt:P279* wd:Q15893266. } # excludes Brittany
+  MINUS { ?country wdt:P31/wdt:P279* wd:Q1048835. }  # excludes the European Union
+}
+LIMIT 1000
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?material ?painting ?materialLabel ?paintingLabel
+WHERE
+{
+  ?painting wdt:P31/wdt:P279* wd:Q3305213;
+            p:P186 [ ps:P186 ?material; pq:P518 wd:Q861259 ].
+  ?material wdt:P31 wd:Q16521.
+}
+
+####
+PREFIX schema: <http://schema.org/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+#added before 2016-10
+
+SELECT ?item ?label
+WHERE
+{
+  ?item schema:description "introduza uma descrição"@pt.
+  OPTIONAL {
+    ?item rdfs:label ?label.
+    FILTER(LANG(?label) = "pt").
+  }
+}
+
+####
+PREFIX schema: <http://schema.org/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+#added before 2016-10
+
+SELECT ?item ?label
+WHERE
+{
+  ?item schema:description "enter a description"@en.
+  OPTIONAL {
+    ?item rdfs:label ?label.
+    FILTER(LANG(?label) = "en").
+  }
+}
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?thingLabel ?classLabel ?thing ?class
+WHERE
+{
+	?thing wdt:P31 ?class.
+	?thing wdt:P279 ?class.
+
+}
+
+####
+PREFIX Special: <http://Special>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX http: <http://http>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?item ?itemLabel 
+WHERE 
+{
+?item wdt:P18 <http://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20the%20Netherlands.svg>
+} 
+LIMIT 100
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT DISTINCT ?work ?workLabel ?languageLabel
+WHERE
+{
+  ?work wdt:P37|wdt:P103|wdt:P364|wdt:P407|wdt:P1412|wdt:P2439 ?language.
+  ?language wdt:P31/wdt:P279* wd:Q7275.
+}
+ORDER BY ?languageLabel
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?person ?personLabel ?duration
+WHERE
+{
+  ?person wdt:P31 wd:Q5;
+          ?p [ pq:P580 ?start; pq:P582 ?end ].
+  BIND(ROUND((?end - ?start)/365.2425) AS ?duration).
+  FILTER(?duration > 100).
+  FILTER(?p != p:P119) . # "place of burial" can be an exception
+}
+ORDER BY DESC(?duration)
+
+####
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX http: <http://http>
+
+#added before 2016-10
+
+SELECT ?prop (count(?prop) as ?counts) WHERE 
+{SELECT DISTINCT ?item ?prop WHERE {
+   ?item wdt:P279 wd:Q7187 ;
+         wdt:P703 wd:Q5 ;
+         ?prop ?statement .
+  FILTER(!(regex(str(?prop), "http://www.wikidata.org/prop/direct/" ) ))
+  FILTER(regex(str(?prop), "http://www.wikidata.org/prop/" ) )
+  FILTER NOT EXISTS {
+               ?item ?prop ?statement .
+               ?statement prov:wasDerivedFrom ?derivedFrom  .}
+}
+}
+GROUP BY ?prop
+ORDER BY desc(?counts)
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT ?capital ?capitalLabel ?ofLabel ?start ?end
+WHERE
+{
+  ?capital p:P31 ?capitalStat.
+  ?capitalStat ps:P31 wd:Q5119.
+  OPTIONAL { ?capitalStat pq:P642 ?of. }
+  OPTIONAL { ?capitalStat pq:P580 ?start. }
+  OPTIONAL { ?capitalStat pq:P582 ?end. }
+  MINUS { [] wdt:P36 ?capital. }
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#All CAS registry numbers in Wikidata
+SELECT DISTINCT ?compound ?compoundLabel ?formula ?inchikey ?chemspider ?pubchem WHERE {
+  ?compound wdt:P31 wd:Q11173 .
+  OPTIONAL { ?compound wdt:P231 ?cas . }
+  OPTIONAL { ?compound wdt:P274 ?formula . }
+  OPTIONAL { ?compound wdt:P235 ?inchikey . }
+  OPTIONAL { ?compound wdt:P661 ?chemspider . }
+  OPTIONAL { ?compound wdt:P662 ?pubchem . }
+  FILTER(!BOUND(?cas))
+}
+
+####
+PREFIX schema: <http://schema.org/>
+PREFIX defaultView: <http://defaultView>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+# settlements not being described in the English Wikipedia
+#defaultView:Map
+SELECT DISTINCT ?settlement ?settlementLabel ?coor WHERE {
+  VALUES ?type {wd:Q3957 wd:Q515 wd:Q532 wd:Q486972}
+  ?settlement wdt:P31 wd:Q3957 ;
+              wdt:P625 ?coor .    
+  ?article schema:about ?settlement .
+  FILTER NOT EXISTS { ?wen schema:about ?settlement ; schema:inLanguage "en" }
+}
+
+####
+PREFIX schema: <http://schema.org/>
+PREFIX defaultView: <http://defaultView>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+# settlements not being described in the any Wikipedia
+#defaultView:Map
+SELECT DISTINCT ?city ?cityLabel ?coor WHERE {
+    VALUES ?type { wd:Q3957 wd:Q515 wd:Q532 wd:Q486972 } .
+    ?city wdt:P31 wd:Q3957 ;
+          wdt:P625 ?coor .
+
+    FILTER NOT EXISTS {?article schema:about ?city } .
+}
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+#added before 2016-10
+
+SELECT ?image (count(?image) AS ?cnt) (group_concat(?item) AS ?items) {
+  ?item wdt:P18 ?image
+  } group by ?image having (?cnt>10)
+
+####
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+SELECT DISTINCT ?property ?propertyLabel ?propertyDescription ?subpropertyOf ?subpropertyOfLabel  
+WHERE
+{
+    ?property a wikibase:Property .
+    OPTIONAL {?property wdt:P1647  ?subpropertyOf .}	
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+
+#Most frequent occupations without a label in Latvian (lv)
+#by Edgars2007/Jura1, 2016-05-09
+SELECT ?occup ?occupLabel ?count
+WHERE
+{
+	{
+		SELECT ?occup (COUNT(?person) as ?count)
+		WHERE
+		{
+			?person wdt:P106 ?occup
+		}
+		GROUP BY ?occup
+		ORDER BY DESC(?count)
+		LIMIT 1000
+	}
+  	OPTIONAL {?occup rdfs:label ?label1 	filter(lang(?label1) = "lv")}
+	FILTER(!BOUND(?label1))
+}
+ORDER BY DESC(?count)
+LIMIT 50
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX schema: <http://schema.org/>
+
+#Items and properties where the description is the same as the label
+#by YMS, 2016-09-26
+select distinct ?item ?label ?description (lang(?label) as ?lang) where {
+  ?item rdfs:label ?label
+        filter(str(?label) = str(?description)).
+  ?item schema:description ?description
+        filter(lang(?label) = lang(?description)).
+} limit 50
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT ?subject ?subjectLabel ?gallery
+WHERE {
+    ?subject wdt:P31 wd:Q5 .
+    ?subject wdt:P935 ?gallery.
+    FILTER NOT EXISTS { ?subject wdt:P18 ?x }
+    FILTER regex(str(?subject), "Q211", "i")
+}
+LIMIT 100
+
+####
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+SELECT (COUNT(DISTINCT(?person)) AS ?countPerson)
+WHERE {
+  { # non-zero number of children matches
+    ?person wdt:P1971 ?numOfChildren .
+    {SELECT ?person (COUNT(?child) AS ?numOfChildrenComputed)
+    WHERE {
+      ?person wdt:P40 ?child  
+    }
+    GROUP BY ?person}
+    FILTER (?numOfChildren = ?numOfChildrenComputed)
+  } 
+  UNION
+  { # zero number of children matches
+    ?person wdt:P1971 "0"^^xsd:decimal .
+    FILTER NOT EXISTS { ?person wdt:P40 ?child }
+  }
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT ?publisher ?publisherLabel ?work WHERE {
+  # entities used as publisher
+  ?work wdt:P123 ?publisher .
+  # but that are actually a disambiguation page
+  ?publisher wdt:P31 wd:Q4167410 .
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#Instances of actual languages (e.g. "instance of Hindi", often incorrectly set to indicate the language of something or to request a sitelink)
+SELECT ?item ?itemLabel
+WHERE {
+  ?item wdt:P31/wdt:P31* wd:Q34770 .
+  FILTER NOT EXISTS {?item wdt:P31 wd:Q34770}
+}
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+SELECT ?lab ?item WHERE {
+  ?item rdfs:label ?lab .
+  MINUS {?item wdt:P31 wd:Q4167836 } . # no category items
+  VALUES ?lab {"Agelenopsis pennsylvanica"@en
+    "Agelenopsis potteri"@en
+    "Anelosimus studiosus"@en
+  } .
+}
+
+####
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+CONSTRUCT {
+  wd:Q35869 ?p ?o .
+  ?o ?qualifier ?f .
+  ?o prov:wasDerivedFrom ?u .
+  ?u ?a ?b .
+  }
+WHERE {
+  wd:Q35869 ?p ?o .
+  optional {?o ?qualifier ?f .}
+  OPTIONAL {?o prov:wasDerivedFrom ?u .
+  ?u ?a ?b .}
+  }
+
+####
+PREFIX schema: <http://schema.org/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX https: <http://https>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT
+	?item 
+	?NAME
+	(GROUP_CONCAT( DISTINCT ?ALTERNATIVNAMEN; separator=";") 	as ?ALTERNATIVNAMEN_)
+	(SAMPLE ( ?KURZBESCHREIBUNG) 						as ?KURZBESCHREIBUNG_)
+	(GROUP_CONCAT( DISTINCT ?GEBURTSDATUM; separator=";") 		as ?GEBURTSDATUM_)
+	(GROUP_CONCAT( DISTINCT ?GEBURTSORT; separator=";") 			as ?GEBURTSORT_)
+	(GROUP_CONCAT( DISTINCT ?STERBEDATUM; separator=";") 		as ?STERBEDATUM_)
+	(GROUP_CONCAT( DISTINCT ?STERBEORT; separator=";") 			as ?STERBEORT_)
+	?article
+WHERE
+{
+	{ SELECT ?item ?article { ?article 	schema:about ?item ; schema:isPartOf <https://de.wikipedia.org/> . ?item wdt:P31 wd:Q5 . } LIMIT 200 }
+  	OPTIONAL { ?item skos:altLabel ?ALTERNATIVNAMEN  		. FILTER(lang(?ALTERNATIVNAMEN)="de")  }.
+  	OPTIONAL { ?item schema:description ?KURZBESCHREIBUNG 	. FILTER(lang(?KURZBESCHREIBUNG)="de") } .  
+  	OPTIONAL { ?item wdt:P569 	?GEBURTSDATUM }	. 
+  	OPTIONAL { ?item wdt:P19 	?pob }	. 
+  	OPTIONAL { ?item wdt:P570 	?STERBEDATUM }	. 
+  	OPTIONAL { ?item wdt:P20 	?pod }	. 
+  	SERVICE wikibase:label { bd:serviceParam wikibase:language "de" . 
+							?item rdfs:label ?NAME .
+                            ?pob rdfs:label ?GEBURTSORT . 
+                            ?pod rdfs:label ?STERBEORT  }
+}
+GROUP BY ?item ?NAME ?article
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+SELECT ?item ?itemLabelHE ?name WHERE {
+  ?item wdt:P31 wd:Q5.
+  ?item wdt:P735 ?name.
+  FILTER NOT EXISTS {?name rdfs:label ?nameLabelHE filter (lang(?nameLabelHE) = "he")} .
+  ?item rdfs:label ?itemLabelHE filter (lang(?itemLabelHE) = "he") .
+  }
+
+####
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+#added before 2016-10
+ SELECT DISTINCT ?occ ?occLabelEN ?occLabelDE WHERE {
+	{ ?occ wdt:P31/wdt:P31* wd:Q12737077 }
+	UNION
+	{ ?occ wdt:P279/wdt:P279* wd:Q12737077 } .
+	FILTER NOT EXISTS { ?occ wdt:P31 wd:Q5 } .
+	FILTER NOT EXISTS { ?occ wdt:P31 wd:Q13406463 } .
+	FILTER ( ?occ != wd:Q28640 ) .
+	?occ rdfs:label ?occLabelDE filter (lang(?occLabelDE) = "de") .
+	OPTIONAL {
+		?occ rdfs:label ?occLabelEN filter (lang(?occLabelEN) = "en") .
+	}
+}
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+#added before 2016-10
+ 
+SELECT DISTINCT ?animal ?animalLabel ?itemLabel ?image ?personLabel
+WHERE
+{
+	?item wdt:P31 wd:Q16521. 
+  	?animal wdt:P31 ?item .
+        ?person wdt:P39 ?x .
+  	?animal wdt:P127 ?person .
+  	OPTIONAL {
+           ?animal wdt:P18 ?image .
+        }
+} LIMIT 10
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+# Make a list of properties of the type external-id
+SELECT ?property ?propertyLabel ?propertyDescription WHERE {
+  ?property wikibase:propertyType wikibase:ExternalId .           
+} ORDER BY ?propertyLabel
+
+####
+PREFIX are: <http://are>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+# Make a list of items that have  Biografisch Portaal number (P651), but have less than 6 statements
+# The minimum set of statements expected are:
+# * Biografisch Portaal number (P651)
+# * instance of (P31) -> human (Q5)
+# * sex or gender (P21)
+# * place of birth (P19)
+# * date of birth (P569)
+# The SPARQL database isn't complete up to date for the number of statements so this query will return less or wrong items.
+
+SELECT ?item ?itemLabel ?itemDescription ?statementcount WHERE {
+  ?item wdt:P651 [] .
+  ?item wikibase:statements ?statementcount .
+  FILTER (?statementcount < 6 )           
+} ORDER BY ?itemLabel
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT ?street ?streetLabel ?cityLabel ?personLabel
+WHERE
+{
+    ?street wdt:P31 wd:Q79007 .
+    ?street wdt:P17 wd:Q142 .
+    ?street wdt:P131 ?city .
+    ?street wdt:P138 ?person .
+    ?person wdt:P31 wd:Q5
+}
+ORDER BY ?city
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT ?street ?rueLabel ?cityLabel ?namedLabel
+WHERE
+{
+    ?street wdt:P31 wd:Q79007 .
+    ?street wdt:P17 wd:Q142 .
+    ?street wdt:P131 ?city .
+    ?street wdt:P138 ?named .
+    ?named wdt:P21 wd:Q6581072
+}
+ORDER BY ?city
+
+####
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT ?street ?streetLabel
+WHERE
+{
+    ?street wdt:P31/wdt:P279* wd:Q79007 .
+    ?street wdt:P17 wd:Q142 .
+    MINUS { ?street wdt:P131 [] } .
+}
+ORDER BY ?streetLabel
+
+####

@@ -1,0 +1,12 @@
+PREFIX  dbpedia2: <http://dbpedia.org/property/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?v1 ?v2 ?v3
+WHERE
+  { ?var1  ?v3              ?var2 ;
+           dbpedia2:artist  ?var4 .
+    ?var4  ?v3              ?v2 .
+    ?var1  rdf:type         ?v1 ;
+           dbpedia2:c   ?var0
+    FILTER regex(str(?var2), "x")
+  }

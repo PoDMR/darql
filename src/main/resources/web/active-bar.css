@@ -1,0 +1,26 @@
+.loading {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: 24px;
+	background-color: #d33682;
+	animation: load 5s infinite linear;
+
+	background-size: auto 200%;
+	background-repeat: repeat;
+	background-image: repeating-linear-gradient(
+			-45deg,
+			rgba(255, 255, 255, .2) 25%,
+			transparent 25%, transparent 50%,
+			rgba(255, 255, 255, .2) 50%,
+			rgba(255, 255, 255, .2) 75%,
+			transparent 75%, transparent
+	);
+	z-index: 2147483647;
+}
+
+@keyframes load {
+	0% {background-position: 0 0}
+	100% {background-position: 100% 0}
+}

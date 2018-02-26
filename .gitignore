@@ -1,0 +1,10 @@
+.idea
+*.iml
+/target
+src/main/resources/**/local*.prop
+.files
+hs_err_pid*.log
+.project
+.classpath
+/.settings
+.vscode
