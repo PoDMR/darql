@@ -37,7 +37,7 @@ public class RecordProcessor {
 	public static void processFull(QueryRecord record) {
 		Either<Exception, Query> maybeQuery = record.maybeQuery;
 		if (record.maybeQuery == null) {
-
+			// FileDispatcher#doParse(String) also applies QueryFixer
 			maybeQuery = SparqlUtil.get().toQuery(record.queryStr);
 		}
 
@@ -57,9 +57,9 @@ public class RecordProcessor {
 
 			withBody(record, element, query);
 		}
-
-
-
+//		else {
+//			//
+//		}
 	}
 
 	private static void analyzeQuery(QueryRecord record, Query query) {
@@ -140,7 +140,7 @@ public class RecordProcessor {
 		record.optional = flagWalker.optional.isTrue();
 		record.union = flagWalker.union.isTrue();
 		record.graph = flagWalker.graph.isTrue();
-		record.subquery = flagWalker.subquery.isTrue();  
+		record.subquery = flagWalker.subquery.isTrue();  // special
 		record.exists = flagWalker.exists.isTrue();
 		record.notExists = flagWalker.notExists.isTrue();
 		record.service = flagWalker.service.isTrue();
@@ -216,16 +216,16 @@ public class RecordProcessor {
 				!record.spFlower &&
 				!record.spFlowerSet;
 		}
-
-
-
+//		else {
+//			record.shapeless = true;
+//		}
 
 		if (record.var_predicate) {
-
-			if (record.shapeless) {
+//			boolean hiddenCycle = GraphShape.hasHiddenCycle(element, graph);
+			if (record.shapeless != null && record.shapeless) {
 				Pair<Integer, Integer> widthXnodeCount = HyperTreeUtil.hyperTreeCheck(query);
 				int hyperTreeWidth = widthXnodeCount.getLeft();
-
+//  			int htNodeCount = widthXnodeCount.getRight();
 				if (hyperTreeWidth > 0) {
 					record.hypertreeWidth = hyperTreeWidth;
 				}

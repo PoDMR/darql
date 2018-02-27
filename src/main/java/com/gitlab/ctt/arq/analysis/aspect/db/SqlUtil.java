@@ -23,7 +23,7 @@ public class SqlUtil {
 	));
 
 	public static String checkExists(String tableName) {
-
+		// language=PostgreSQL
 		return String.format("SELECT EXISTS (\n" +
 			"   SELECT 1\n" +
 			"   FROM   information_schema.tables \n" +
@@ -33,10 +33,10 @@ public class SqlUtil {
 	}
 
 	public static String createTable(String tableName, Class<?> type) {
-		Field[] fields = QueryRecord.class.getFields();
+		Field[] fields = type.getFields();
 		List<String> fieldStrings = new ArrayList<>();
 		for (Field field : fields) {
-
+//			Annotation[] annotations = field.getDeclaredAnnotations();
 			String name = field.getName();
 			if (!EXCLUDES.contains(name) && !field.isAnnotationPresent(Ignore.class)) {
 				String typeName = field.getType().getSimpleName();
@@ -55,14 +55,14 @@ public class SqlUtil {
 			");", tableName, String.join(",\n    ", fieldStrings));
 	}
 
-
-
-
-
-
-
-
-
+//	public static String createTableDuplicates(String tableName) {
+//		// language=PostgreSQL
+//		return String.format("CREATE TABLE \"%s\"(\n" +
+//			"    \"id\" INT PRIMARY KEY NOT NULL,\n" +
+//			"    \"origin\" TEXT,\n" +
+//			"    \"copyOfId\" INT\n" +
+//			");", tableName);
+//	}
 
 	public static String insertRecord(String tableName, QueryRecord record) {
 		return insertObject(tableName, record);
@@ -72,8 +72,8 @@ public class SqlUtil {
 		Field[] fields = object.getClass().getFields();
 		List<String> fieldStrings = new ArrayList<>();
 		List<String> fieldValues = new ArrayList<>();
-
-
+//		fieldStrings.add(ID_KEY);
+//		fieldValues.add(String.valueOf(record.id));
 		for (Field field : fields) {
 			String name = field.getName();
 			if (!EXCLUDES.contains(name) || ID_KEY.equals(name)) {
@@ -95,7 +95,7 @@ public class SqlUtil {
 				}
 			}
 		}
-
+		// language=PostgreSQL
 		return String.format("INSERT INTO \"%s\" (%s)\n" +
 			"VALUES (%s); ", tableName,
 			String.join(",", fieldStrings),
@@ -103,7 +103,7 @@ public class SqlUtil {
 	}
 
 	public static String insertDupe(String tableName, long id, String origin, long dupeOf) {
-
+		// language=PostgreSQL
 		return String.format("INSERT INTO \"%s\" (\"id\", \"origin\", \"copyOfId\")\n" +
 				"VALUES (%s, '%s', %s); ", tableName,
 			id, escapeString(origin), dupeOf);

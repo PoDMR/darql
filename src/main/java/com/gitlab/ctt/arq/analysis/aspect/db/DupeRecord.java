@@ -1,17 +1,15 @@
 package com.gitlab.ctt.arq.analysis.aspect.db;
 
-import jdk.nashorn.internal.ir.annotations.Ignore;
-
 public class DupeRecord {
 	public int id;
 	public String origin;
 	public int copyOfId;
 
-	@Ignore
+//	@Ignore
 	public String originMajor;
-	@Ignore
+//	@Ignore
 	public String originMinor;
-	@Ignore
+//	@Ignore
 	public int originLinum;
-
+//	public String tag;
 }

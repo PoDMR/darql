@@ -1,56 +1,57 @@
 package com.gitlab.ctt.arq.analysis.aspect.db;
 
 import fj.data.Either;
-import jdk.nashorn.internal.ir.annotations.Ignore;
 import org.apache.jena.query.Query;
 
-
+/**
+ * Represents the general information and simple results of analyzing a query.
+ */
 @SuppressWarnings("WeakerAccess")
 public class QueryRecord {
 	public Either<Exception, Query> maybeQuery;
 	public int id;
 	public String origin;
 
-	@Ignore
-	public String originMajor;  
-	@Ignore
-	public String originMinor;  
-	@Ignore
-	public int originLinum;  
-
-
+//	@Ignore
+	public String originMajor;  // for faster: major/minor.log:n
+//	@Ignore
+	public String originMinor;  // for faster: major/minor.log:n
+//	@Ignore
+	public int originLinum;  // for faster: major/minor.log:n
+//	public String tag;  // for identifying run. numeric value is alternative
+//	public String logData;  // log line data from LogParse#queryFromLogLine
 
 	public byte[] hash;
 	public String queryStr;
 
 	public Boolean parseError;
 
-
+	// default to false
 	public Boolean regex;
 	public Boolean teePredicate;
 	public Boolean var_predicate;
 	public Boolean bad_filter;
-	public Boolean opt_bad_nesting;    
-	public Boolean opt_bad_interface;  
+	public Boolean opt_bad_nesting;    // nullable
+	public Boolean opt_bad_interface;  // nullable
 	public Boolean projection;
 	public Boolean projectionUnsure;
 	public Boolean askProjection;
 	public Boolean askProjectionUnsure;
 
-
+	// default to true
 	public Boolean wb;
 	public Boolean uwd;
 	public Boolean uwwd;
-	public Boolean uwdComp;   
-	public Boolean uwwdComp;  
-	public Boolean wdpt;      
+	public Boolean uwdComp;   // nullable
+	public Boolean uwwdComp;  // nullable
+	public Boolean wdpt;      // nullable
 
 	public Boolean select;
 	public Boolean construct;
 	public Boolean ask;
 	public Boolean describe;
 
-
+	// default to false
 	public Boolean distinct;
 	public Boolean limit;
 	public Boolean count;
@@ -61,7 +62,7 @@ public class QueryRecord {
 
 	public Boolean afo;
 	public Boolean afou;
-
+	// default to false
 	public Boolean and;
 	public Boolean filter;
 	public Boolean optional;
@@ -77,7 +78,7 @@ public class QueryRecord {
 	public Boolean data;
 	public Boolean dataset;
 
-
+	// default to false
 	public Boolean HAVING;
 	public Boolean GROUP__BY;
 	public Boolean ORDER__BY;
@@ -91,7 +92,7 @@ public class QueryRecord {
 	public Boolean cq_fo;
 
 	public Boolean shapeless;
-
+	// default to false
 	public Boolean chainSet;
 	public Boolean star;
 	public Boolean circle;
@@ -104,12 +105,12 @@ public class QueryRecord {
 	public Boolean spFlower;
 	public Boolean spFlowerSet;
 
-
-
-
-
-
-
+//	public Boolean chainSet_sg;
+//	public Boolean star_sg;
+//	public Boolean circle_sg;
+//	public Boolean utree_sg;
+//	public Boolean uforest_sg;
+//	public Boolean cycletree_sg;
 
 	public Integer tripleCount;
 	public Double edgeCover;

@@ -2,7 +2,7 @@
 
 DARQL - Deep Analysis of SPARQL Queries
 
-![screenshot](screenshot.png)
+![screenshot](src/main/resources/sample/demo/screenshot.png)
 
 # Prerequisites
 
@@ -70,7 +70,7 @@ Alternatively, you can use [WSL on Windows 10](https://docs.microsoft.com/en-us/
 
 If `make` is installed, predefined targets can be used:
 
-1. Clone this repository and `cd` into it. Set `Makefile=src/main/resources/demo/demo.mk`.
+1. Clone this repository and `cd` into it. Set `Makefile=src/main/resources/sample/demo/demo.mk`.
 2. Run `make -f $Makefile pg_start` to start PostgreSQL via Docker.
 3. Run `make -f $Makefile db` to populate the database with [examples](src/main/resources/sample/demo/wikidata.txt).
 4. Run `make -f $Makefile web` to start the server.

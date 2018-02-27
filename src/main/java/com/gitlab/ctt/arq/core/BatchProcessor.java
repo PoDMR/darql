@@ -78,10 +78,12 @@ public class BatchProcessor {
 							List<?> srcs = (List<?>) item.get("src");
 							for (Object srcObj : srcs) {
 								Map<?, ?> src = (Map<?, ?>) srcObj;
-								String hostPattern = Resources.getHostname();
+								String hostPattern = String.valueOf(src.get("host"));
 								hostPattern = hostPattern == null ? ".*" : hostPattern;
+								String hostname = Resources.getHostname();
+								hostname = hostname == null ? "" : hostname;
 								if (Pattern.compile(hostPattern, Pattern.CASE_INSENSITIVE)
-									.matcher(src.get("host").toString()).matches()) {
+										.matcher(hostname).matches()) {
 									dir = new File(src.get("dir").toString());
 								}
 							}
@@ -139,10 +141,10 @@ public class BatchProcessor {
 
 	private void processRootNode(File dir, TNode<String> node) {
 		Vfs vfs = new LocalVfs(dir);
-		DateTime dt = DateTime.now();  
+		DateTime dt = DateTime.now();  // millis are always "relative" (unix epoch)
 		DateTimeFormatter dtf = DateTimeFormat.forPattern("yyMMddHHmmss");
 		batchTag = dt.withZone(DateTimeZone.UTC).toString(dtf);
-
+//		consumer.init();
 		try {
 			processNode(vfs, node, true);
 		} catch (BailException e) {
@@ -165,16 +167,16 @@ public class BatchProcessor {
 		}
 	}
 
-
+	// TODO: "commit" flush logic correctness for top-level wildcards
 	private void filterByNode(FileEntry vf, TNode<String> parent, boolean root) {
 		String name = vf.getName();
-
-
-
+//		LOGGER.debug("filter by path: {}", name);
+		// IF backing vfs supports seeking, leverage child order!
+//		LOGGER.debug("Filtering with: {}", parent.getChildren());
 		boolean prepared = false;
 		for (TNode<String> node : parent.getChildren()) {
 			String regex = node.getValue();
-
+//			LOGGER.trace("checking for pattern: {}", regex);
 			if (name.matches(regex)) {
 				if (!prepared) {
 					prepare(node, parent);
@@ -187,7 +189,7 @@ public class BatchProcessor {
 
 	private void filterByFileType(FileEntry vf, TNode<String> parent) {
 		String name = vf.getName();
-
+//		LOGGER.trace("filter by type: {}", name);
 		if (name.endsWith(".tar")) {
 			TarVfs tarVfs = new TarVfs(vf);
 			processNode(tarVfs, parent, false);
@@ -205,19 +207,24 @@ public class BatchProcessor {
 			} catch (IOException e) {
 				LOGGER.warn("Unhandled", e);
 			}
-		} else {  
-
-
-
-
+		} else {  // no check?
+			// about threaded version:
+			// here, dispatch VF item to a thread pool worker
+			// for each VF item create a consumer with a different out file
+			// also, probably implementation only feasible for uncompressed VFS
 			consumer.accept(vf);
 		}
 	}
 
-	
+	/*
+	 IMPORTANT: handling of single top level root use, e.g.:
+	 uw_all/uniq_sparql.log  -> uw_all
+	 uw_all/uniq_sparql2.log -> uw_all => can wipe first log
+	 uw_all/uniq_sparql*.log -> also creates above situation
+	 */
 	private void prepare(TNode<String> node, TNode<String> parent) {
 		if (batchTag != null && "/".equals(parent.getValue())) {
-			consumer.waitForAll();  
+			consumer.waitForAll();  // TODO we also need to reset here!
 			String nodeTag = node.getValue().replaceAll("/.*", "");
 			if (!nodeTag.equals(currentNodeTag)) {
 				currentNodeTag = nodeTag;

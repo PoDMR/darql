@@ -5,8 +5,9 @@ input:
         dir: 'src/main/resources/sample/demo'
     filter: |-
       wikidata.txt
-  - pattern: .*(wikidata).*
-    handler: delimHandlerHash
+#handlers:
+#  - pattern: .*(wikidata).*
+#    handler: delimHandlerHash
 job_sets:
   - name: db_fill
     jobs:
