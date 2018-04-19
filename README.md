@@ -2,6 +2,8 @@
 
 DARQL - Deep Analysis of SPARQL Queries
 
+A large-scale study using the code from this repository has been performed, more details can be found [here](http://www.vldb.org/pvldb/vol11/p149-bonifati.pdf).
+
 ![screenshot](src/main/resources/sample/demo/screenshot.png)
 
 # Prerequisites
@@ -56,7 +58,7 @@ To easily install the requirements with [Chocolatey](https://chocolatey.org/):
 
 ```ps1
 cinst -y docker
-cinst -y jdk8 
+cinst -y jdk8
 cinst -y maven
 
 cinst -y msys2
@@ -80,4 +82,4 @@ Alternatively, look in the `Makefile` to run the steps manually or to adjust the
 
 By default, the target will set up and populate the database with data from [Wikidata](src/main/resources/sample/demo/wikidata.txt). To make changes and supply different data with other formats, adjust or create a new configuration file `config.yaml` as supplied in the `Makefile`.
 
-When finished, you can stop the server by hitting enter and shutdown PostgreSQL with `make pg_stop`. 
+When finished, you can stop the server from the command line and then shutdown PostgreSQL with `make pg_stop`. 
