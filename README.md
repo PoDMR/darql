@@ -6,7 +6,7 @@ A large-scale study using the code from this repository has been performed, more
 
 You can use the software to either
 
-1. Explore the SPARQL query logs as described [here](#analysis).
+1. Explore the SPARQL query logs as described [here](#exploration).
 2. Reproduce published results as described [here](#analysis).
 
 ![screenshot](src/main/resources/sample/demo/screenshot.png)
@@ -102,7 +102,7 @@ To make changes and supply different data with other formats, adjust or create a
 
 When finished, you can stop the server from the command line and then shutdown PostgreSQL with `make pg_stop`.
 
-## Analysis and Reproduction
+## Analysis
 <a name="analysis"></a>
 
 A full analysis on prepared data sets can be performed and aggregated results will be output.
