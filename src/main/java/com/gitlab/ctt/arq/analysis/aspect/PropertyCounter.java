@@ -2,6 +2,7 @@ package com.gitlab.ctt.arq.analysis.aspect;
 
 import com.gitlab.ctt.arq.analysis.FileOutput;
 import com.gitlab.ctt.arq.analysis.Job;
+import com.gitlab.ctt.arq.util.SparqlUtil;
 import com.gitlab.ctt.arq.utilx.Resources;
 import fj.data.Either;
 import org.apache.jena.query.Query;
@@ -22,10 +23,25 @@ public class PropertyCounter implements Job<Either<Exception, Query>, Void> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(PropertyCounter.class);
 	private static final String BASENAME = "property_count.yaml";
 
-	private AtomicLong totalCounter = new AtomicLong();
+	private AtomicLong itemCounter = new AtomicLong();
+	private AtomicLong validCounter = new AtomicLong();
+	private AtomicLong elementCounter = new AtomicLong();
 	private StructureCount structureCount;
 	private FeatureCount featureCount;
 	private String tag;
+
+	public static void main(String[] args) {
+		PropertyCounter processor = new PropertyCounter();
+		processor.init();
+		String sparqlStr = Resources.getResourceAsString("sample/misc/scrap.sparql");
+		Either<Exception, Query> maybeQuery = SparqlUtil.get().toQuery(sparqlStr);
+		if (maybeQuery.isRight()) {
+			Query query = maybeQuery.right().value();
+			processor.handleQuery(query);
+		} else {
+			throw new RuntimeException(maybeQuery.left().value());
+		}
+	}
 
 	@Override
 	public void setTag(String tag) {
@@ -40,7 +56,9 @@ public class PropertyCounter implements Job<Either<Exception, Query>, Void> {
 
 	@Override
 	public Void apply(Either<Exception, Query> maybeQuery) {
+		itemCounter.getAndIncrement();
 		if (maybeQuery.isRight()) {
+			validCounter.getAndIncrement();
 			Query query = maybeQuery.right().value();
 			handleQuery(query);
 		}
@@ -50,7 +68,7 @@ public class PropertyCounter implements Job<Either<Exception, Query>, Void> {
 	private void handleQuery(Query query) {
 		Element element = query.getQueryPattern();
 		if (element != null) {
-			long currentCount = totalCounter.getAndIncrement();
+			long currentCount = elementCounter.getAndIncrement();
 
 
 
@@ -77,12 +95,16 @@ public class PropertyCounter implements Job<Either<Exception, Query>, Void> {
 		}
 		structureCount = null;
 		featureCount = null;
-		totalCounter.set(0L);
+		itemCounter.set(0L);
+		validCounter.set(0L);
+		elementCounter.set(0L);
 	}
 
 	private Map<String, Long> getStringLongMap() {
 		Map<String, Long> map = new LinkedHashMap<>();
-		map.put("totalElements", totalCounter.get());
+		map.put("totalQueries", itemCounter.get());
+		map.put("totalValid", validCounter.get());
+		map.put("totalElements", elementCounter.get());
 		structureCount.mapCounters(map);
 		featureCount.mapCounters(map);
 		return map;

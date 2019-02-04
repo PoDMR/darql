@@ -1,39 +1,104 @@
 package com.gitlab.ctt.arq.sparql;
 
+import com.gitlab.ctt.arq.core.BatchProcessor.BailException;
+import org.apache.jena.sparql.algebra.walker.ElementWalker_New.EltWalker;
+import org.apache.jena.sparql.expr.ExprVisitor;
+import org.apache.jena.sparql.expr.ExprVisitorBase;
 import org.apache.jena.sparql.syntax.Element;
+import org.apache.jena.sparql.syntax.ElementService;
 import org.apache.jena.sparql.syntax.ElementSubQuery;
 import org.apache.jena.sparql.syntax.ElementVisitor;
-import org.apache.jena.sparql.syntax.ElementWalker;
 
 public class ElementDeepWalker {
 	public static void walk(Element el, ElementVisitor visitor) {
 		walk(el, visitor, null, null) ;
 	}
 
-	public static void walk(Element el, ElementVisitor visitor,
-			ElementVisitor beforeVisitor,   ElementVisitor afterVisitor) {
-		Walker w = new Walker(visitor, beforeVisitor, afterVisitor) ;
-		el.visit(w) ;
+	public static void walkWithService(Element el, ElementVisitor visitor) {
+		EltWalker w = new DeepWalker(visitor, null, null);
+		walk(el, visitor, null, null, w);
 	}
 
-	public static class Walker extends ElementWalker.Walker {
-		public Walker(ElementVisitor visitor,
-				ElementVisitor beforeVisitor, ElementVisitor afterVisitor) {
-			super(visitor, beforeVisitor, afterVisitor);
+	protected static void walk(Element el, ElementVisitor visitor, EltWalker w) {
+		walk(el, visitor, null, null, w);
+	}
+
+	protected static void walk(Element el, ElementVisitor visitor,
+			ElementVisitor beforeVisitor, ElementVisitor afterVisitor) {
+		EltWalker w = new SubQueryWalker(visitor, beforeVisitor, afterVisitor);
+		walk(el, visitor, beforeVisitor, afterVisitor, w);
+	}
+
+	protected static void walk(Element el, ElementVisitor visitor,
+			ElementVisitor beforeVisitor, ElementVisitor afterVisitor,
+			EltWalker w) {
+		el.visit(w);
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	protected static class DeepWalker extends EltWalker {
+		protected DeepWalker(ElementVisitor visitor, ExprVisitor exprVisitor) {
+			super(visitor, exprVisitor);
+		}
+
+		protected DeepWalker(ElementVisitor visitor,
+				ElementVisitor dummyBeforeVisitor,
+				ElementVisitor dummyAfterVisitor) {
+			super(visitor, new ExprVisitorBase());
 		}
 
 		@Override
 		public void visit(ElementSubQuery el) {
-			if (beforeVisitor != null) {
-				el.visit(beforeVisitor) ;
+			try {
+
+
+				elementVisitor.visit(el);
+				ElementDeepWalker.walk(el.getQuery().getQueryPattern(), elementVisitor);
+			} catch (BailException ignored) {
 			}
-			if (el.getQuery() != null && el.getQuery().getQueryPattern() != null) {
-				el.getQuery().getQueryPattern().visit(this);
+		}
+
+		@Override
+		public void visit(ElementService el) {
+			try {
+				elementVisitor.visit(el);
+				ElementDeepWalker.walk(el.getElement(), elementVisitor);
+			} catch (BailException ignored) {
 			}
-			proc.visit(el) ;
-			if (afterVisitor != null) {
-				el.visit(afterVisitor) ;
-			}
+		}
+	}
+
+	protected static class SubQueryWalker extends DeepWalker {
+		protected SubQueryWalker(ElementVisitor visitor,
+			ElementVisitor dummyBeforeVisitor,
+			ElementVisitor dummyAfterVisitor) {
+			super(visitor, new ExprVisitorBase());
+		}
+
+		@Override
+		public void visit(ElementService el) {
+
+			elementVisitor.visit(el);
 		}
 	}
 }

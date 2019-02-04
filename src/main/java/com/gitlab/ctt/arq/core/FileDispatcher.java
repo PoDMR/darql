@@ -1,12 +1,14 @@
 package com.gitlab.ctt.arq.core;
 
 import com.gitlab.ctt.arq.analysis.Job;
+import com.gitlab.ctt.arq.analysis.SimilaritySearch;
 import com.gitlab.ctt.arq.analysis.StreakAnalysis;
 import com.gitlab.ctt.arq.analysis.aspect.*;
 import com.gitlab.ctt.arq.analysis.aspect.db.DatabaseFiller2;
 import com.gitlab.ctt.arq.core.format.LineDelimFormat;
 import com.gitlab.ctt.arq.core.format.LineItem;
 import com.gitlab.ctt.arq.core.format.QueryEntry;
+import com.gitlab.ctt.arq.core.format.WikiTsvLineFormat;
 import com.gitlab.ctt.arq.util.LogParse;
 import com.gitlab.ctt.arq.util.QueryFixer;
 import com.gitlab.ctt.arq.util.SparqlUtil;
@@ -38,8 +40,10 @@ public class FileDispatcher implements Consumer<FileEntry> {
 	private OpDistribution opDistribution = new OpDistribution();
 	private OpDistribution opDistribution2 = new OpDistribution(true);
 	private OptAnalysis optAnalysis = new OptAnalysis();
-	private StreakAnalysis streakAnalysis = new StreakAnalysis(30, 0.75d);
+	private UriCounter uriCounter = new UriCounter();
+	private StreakAnalysis<String> streakAnalysis = StreakAnalysis.stringStreakAnalysis(30, 0.75d);
 	private DatabaseFiller2 databaseFiller = new DatabaseFiller2();
+	private SimilaritySearch similaritySearch = new SimilaritySearch();
 
 	private List<Job<Either<Exception, Query>, ?>> jobs = new ArrayList<>(Arrays.asList(
 		pathExtractor,      
@@ -48,10 +52,12 @@ public class FileDispatcher implements Consumer<FileEntry> {
 
 		propertyCounter,    
 		optAnalysis,        
+		uriCounter,         
 		opDistribution2,    
 		opDistribution      
 	));
-	List<Job<QueryEntry, Boolean>> extJobs = new ArrayList<>(Arrays.asList(
+	private List<Job<QueryEntry, Boolean>> extJobs = new ArrayList<>(Arrays.asList(
+		similaritySearch,
 		deduplicator,       
 		databaseFiller
 	));
@@ -70,6 +76,7 @@ public class FileDispatcher implements Consumer<FileEntry> {
 	private FileHandler tsvHandler;
 	private FileHandler delimHandlerHash;
 	private FileHandler delimHandlerDash;
+	private FileHandler wikiTsvHandler;
 
 	private Map<String, Supplier<FileHandler>> handlers = ImmutableMap.
 		<String, Supplier<FileHandler>>builder()
@@ -77,6 +84,7 @@ public class FileDispatcher implements Consumer<FileEntry> {
 		.put("tsvHandler", () -> tsvHandler)
 		.put("delimHandlerHash", () -> delimHandlerHash)
 		.put("delimHandlerDash", () -> delimHandlerDash)
+		.put("wikiTsvHandler", () -> wikiTsvHandler)
 		.build();
 	private Map<String, String> handlerMap;
 
@@ -94,6 +102,8 @@ public class FileDispatcher implements Consumer<FileEntry> {
 		tsvHandler = FileHandler.record(this::actOnTSVLine);
 		LineDelimFormat lineDelimHash = new LineDelimFormat(this::actOnQuery);  
 		LineDelimFormat lineDelimDash = new LineDelimFormat(this::actOnQuery, LineDelimFormat.DASH_DELIM);
+		WikiTsvLineFormat wikiTsvLineFormat = new WikiTsvLineFormat(this::actOnQuery);
+		wikiTsvHandler = FileHandler.record(wikiTsvLineFormat::acceptLine);
 
 
 		delimHandlerHash = FileHandler.record(lineDelimHash::acceptLine);
@@ -138,15 +148,15 @@ public class FileDispatcher implements Consumer<FileEntry> {
 	}
 
 	private void jobsInit(List<? extends Job<?, ?>> jobs) {
-		if (validJobs.size() > 0) {
+
 			validJobs = validJobs.stream().map(String::toLowerCase)
 				.collect(Collectors.toList());
 			jobs.removeIf(
 				j -> !validJobs.contains(j.getClass().getSimpleName().toLowerCase())
 			);
-		}
-		jobs.forEach(Job::init);
+
 		jobs.forEach(job -> job.setTag(tag));
+		jobs.forEach(Job::init);
 	}
 
 
@@ -154,6 +164,7 @@ public class FileDispatcher implements Consumer<FileEntry> {
 		waitForAll();
 		jobs.forEach(Job::commit);
 		jobsNoAsync.forEach(Job::commit);
+		extJobs.forEach(Job::commit);
 	}
 
 
@@ -176,8 +187,10 @@ public class FileDispatcher implements Consumer<FileEntry> {
 
 		if (handlerMap == null) {
 
-			if (name.matches(".*(RKB-Explorer|tsv|TSV).*")) {
+			if (name.matches(".*(RKB-Explorer|tsv/|TSV/).*")) {
 				tsvHandler.acceptFile(file);
+			} else if (name.matches(".*tsv")) {
+				wikiTsvHandler.acceptFile(file);
 			} else if (name.matches(".*(sparql|SPARQL|wikidata).*")) {
 
 
@@ -244,10 +257,18 @@ public class FileDispatcher implements Consumer<FileEntry> {
 		String queryStr2 = QueryFixer.get().fix(queryStr.lineStr);  
 		Either<Exception, Query> maybeQuery = SparqlUtil.get().toQuery(queryStr2);
 		logBad(maybeQuery, queryStr.lineStr);
-		jobs.forEach(j -> j.apply(maybeQuery));
 
-		extJobs.forEach(j -> j.apply(new QueryEntry(maybeQuery, queryStr.lineStr,
-			String.format("%s:%s", queryStr.origin, queryStr.num))));
+		QueryEntry queryEntry = new QueryEntry(maybeQuery, queryStr.lineStr,
+			String.format("%s:%s", queryStr.origin, queryStr.num));
+		processEntry(queryEntry);
+	}
+
+	protected void processEntry(QueryEntry queryEntry) {
+		jobs.forEach(j -> j.apply(queryEntry.maybeQuery));
+
+		extJobs.forEach(j -> {
+			j.apply(queryEntry);
+		});
 	}
 
 	private void logBad(Either<Exception, Query> maybeQuery, String queryStr) {
@@ -259,10 +280,11 @@ public class FileDispatcher implements Consumer<FileEntry> {
 	public static final boolean isDebug = initDebugFlag();
 
 	private static boolean initDebugFlag() {
-		return System.getenv("DEBUG") != null ||
-			java.lang.management.
-			ManagementFactory.getRuntimeMXBean().
-			getInputArguments().toString().indexOf("-agentlib:jdwp") > 0;
+		return System.getenv("DEBUG") != null
+
+
+
+			;
 	}
 
 	private void sequentialHandleQuery(LineItem queryStr) {
@@ -299,7 +321,7 @@ public class FileDispatcher implements Consumer<FileEntry> {
 		if (jobsNoAsync.size() > 0) {
 			sequentialHandleQuery(queryStr);
 		}
-		if (jobs.size() > 0 || extJobs.size() > 0) {
+		if (jobs.size() > 0 || extJobs.size() > 0 || jobsNoAsync.size() == 0) {
 			asyncHandleQuery(queryStr);
 		}
 	}

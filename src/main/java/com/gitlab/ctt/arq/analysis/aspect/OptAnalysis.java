@@ -28,10 +28,10 @@ public class OptAnalysis extends OpDistribution {
 	private synchronized void flush(FlagWalker flagWalker) {
 		long flagLong = flagWalker.asLong();
 		int bitset = (int) (flagLong & 0b11111);
-		Integer val = map.get(bitset);
+		Integer val = bitset2count.get(bitset);
 		if (val == null) {
 			val = 0;
 		}
-		map.put(bitset, val + 1);
+		bitset2count.put(bitset, val + 1);
 	}
 }

@@ -23,6 +23,7 @@ public class Deduplicator extends BaseDeduplicator {
 
 	public Deduplicator(String filename) {
 		this.filename = filename;
+
 	}
 
 	@Override
@@ -35,6 +36,8 @@ public class Deduplicator extends BaseDeduplicator {
 
 		uniqQueryWriter = new PrintWriter(new BufferedWriter(uniqQueryWriter, 33_554_432)); 
 	}
+
+
 
 	private  void logQuery(String queryStr, int num) {
 		uniqQueryWriter.print(LineDelimFormat.HASH_DELIM);
@@ -51,6 +54,7 @@ public class Deduplicator extends BaseDeduplicator {
 
 	@Override
 	public void commit() {
+		super.commit();
 		if (uniqQueryFile != null) {
 			LOGGER.debug("Query collection done");
 			logStatus();

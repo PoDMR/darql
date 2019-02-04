@@ -1,6 +1,8 @@
 package com.gitlab.ctt.arq.sparql;
 
+import com.gitlab.ctt.arq.analysis.aspect.PathExtractor;
 import com.gitlab.ctt.arq.analysis.aspect.util.FlagWalker;
+import com.gitlab.ctt.arq.analysis.support.PathWalker;
 import com.gitlab.ctt.arq.core.BatchProcessor.BailException;
 import com.gitlab.ctt.arq.util.GraphShape;
 import com.gitlab.ctt.arq.util.SparqlUtil;
@@ -13,8 +15,10 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.jena.graph.*;
 import org.apache.jena.query.Query;
+import org.apache.jena.sparql.algebra.walker.Walker;
 import org.apache.jena.sparql.core.Var;
 import org.apache.jena.sparql.expr.*;
+import org.apache.jena.sparql.path.*;
 import org.apache.jena.sparql.syntax.*;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.alg.ConnectivityInspector;
@@ -176,14 +180,50 @@ public class SparqlGraph {
 			public void visit(ElementPathBlock el) {
 				el.patternElts().forEachRemaining(tp -> {
 					Node predicate = tp.getPredicate();
-					if (predicate instanceof Node_Variable ||
-						predicate instanceof Node_Blank) {
+					if (isVarNode(predicate)) {
 						hasVarPredicate.setTrue();
 					}
 				});
 			}
 		});
 		return hasVarPredicate.isTrue();
+	}
+
+
+	public static boolean freeVarPredicate(Element element) {
+		List<Node> subjList = new ArrayList<>();
+		List<Node> predList = new ArrayList<>();
+		List<Node> objcList = new ArrayList<>();
+		ElementDeepWalker.walk(element, new ElementVisitorBase() {
+			@Override
+			public void visit(ElementPathBlock el) {
+				el.patternElts().forEachRemaining(tp -> {
+					if (isVarNode(tp.getSubject())) {
+						subjList.add(tp.getSubject());
+					}
+					if (isVarNode(tp.getObject())) {
+						objcList.add(tp.getObject());
+					}
+					if (isVarNode(tp.getPredicate())) {
+						predList.add(tp.getPredicate());
+					}
+				});
+			}
+		});
+		Set<Node> subjSet = new HashSet<>(subjList);
+		Set<Node> predSet = new HashSet<>(predList);
+		Set<Node> objcSet = new HashSet<>(objcList);
+		if (predList.size() != predSet.size()) {
+			return false;
+		}
+		subjSet.retainAll(predList);
+		objcSet.retainAll(predList);
+		return !(subjSet.size() > 0 || objcSet.size() > 0);
+	}
+
+	public static boolean isVarNode(Node predicate) {
+		return predicate instanceof Node_Variable ||
+			predicate instanceof Node_Blank;
 	}
 
 
@@ -233,27 +273,30 @@ public class SparqlGraph {
 		});
 	}
 
+	
 	public static boolean isNonConstant(Object thing) {
 		return !((thing instanceof Node_Literal) || (thing instanceof Node_URI));
 	}
 
-		
+	
 	public static DirectedGraph<Object, DefaultEdge> tryGraphFromQuery(Element element,
 			DirectedGraph<Object, DefaultEdge> graph,
 			Effect3<Object, Object, Object> buildGraph) {
 		Map<Object, Set<Object>> equivalenceMap = equivalenceMap(element);
 		Effect3<Object, Object, Object> addEdge = (subject, object, predicate) -> {
-			if (equivalenceMap.containsKey(subject)) {
-				subject = equivalenceMap.get(subject);
-			}
-			if (equivalenceMap.containsKey(object)) {
-				object = equivalenceMap.get(object);
-			}
+
+
+
+
+
+
+
 			buildGraph.f(subject, object, predicate);
 		};
 
 		collectTriples(element, addEdge);
-		handleFilters(element, addEdge);  
+
+
 		return graph;
 	}
 
@@ -296,7 +339,7 @@ public class SparqlGraph {
 				}
 
 
-				ExprWalker.walk(new ExprVisitorBase() {
+				exprWalkerWalk(new ExprVisitorBase() {
 
 					@Override
 					public void visit(ExprFunctionOp op) {
@@ -311,9 +354,9 @@ public class SparqlGraph {
 		});
 	}
 
-	private static Set<Var> collectExprVars(Expr expr) {
+	public static Set<Var> collectExprVars(Expr expr) {
 		Set<Var> vars = new LinkedHashSet<>();
-		ExprWalker.walk(new ExprVisitorBase() {
+		exprWalkerWalk(new ExprVisitorBase() {
 			@Override
 			public void visit(ExprVar nv) {
 				super.visit(nv);
@@ -344,7 +387,7 @@ public class SparqlGraph {
 			@Override
 			public void visit(ElementFilter filter) {
 				Expr expr = filter.getExpr();
-				ExprWalker.walk(new ExprVisitorBase() {
+				exprWalkerWalk(new ExprVisitorBase() {
 					@Override
 					public void visit(ExprFunction2 func) {
 						if (func instanceof E_Equals) {
@@ -385,5 +428,83 @@ public class SparqlGraph {
 
 	private static Map<Object, Set<Object>> equivalenceMap(Element element) {
 		return equivalenceMap(equivalentFilterPairs(element));
+	}
+
+	public static void exprWalkerWalk(ExprVisitor exprVisitor, Expr expr) {
+
+		Walker.walk(expr, exprVisitor);
+	}
+
+	public static boolean isTreePatternAcyclic(
+		DirectedGraph<Object, DefaultEdge> graph,
+		Element element
+	) {
+		return isTreePatternCompatible(element) && isAcyclic(graph);
+	}
+
+	public static boolean isTreePatternCompatible(Element element) {
+		try {
+			PathVisitor pathVisitor = new PathWalker() {
+				@Override
+				public void accept(Path path) {
+					if (!isTreePatternCompatible(path)) {
+						throw new BailException("not tree pattern compatible");
+					}
+				}
+			};
+			PathExtractor.walkPath(element, pathVisitor);
+		} catch (BailException ignored) {
+			return false;
+		}
+		return true;
+	}
+
+
+
+
+
+
+	protected static boolean isTreePatternCompatible(Path path) {
+		return isTPTerm(path)
+			|| isTPConcat(path)
+			|| isTPRepeatOrTerm(path);
+	}
+
+	private static boolean isTPConcat(Path path) {
+		boolean seq = path instanceof P_Seq;
+		P_Path2 p2 = (P_Path2) path;
+
+		return seq && (
+			isTPRepeatOrTerm(p2.getLeft()) &&
+			isTPRepeatOrTerm(p2.getRight())
+		);
+	}
+
+	private static boolean isTPChoice(Path path) {
+		boolean choice = path instanceof P_Alt;
+		P_Path2 p2 = (P_Path2) path;
+		return choice
+			&& isTPTerm(p2.getLeft())
+			&& isTPTerm(p2.getRight());
+	}
+
+	private static boolean isTPRepeatOrTerm(Path path) {
+		if (isTPTerm(path)) {
+			return true;
+		}
+		boolean r1 = path instanceof P_OneOrMore1;
+		boolean r2 = path instanceof P_ZeroOrMore1;
+		boolean r3 = path instanceof P_ZeroOrMoreN;
+		boolean r4 = path instanceof P_OneOrMoreN;
+		P_Path1 p1 = (P_Path1) path;
+		return (r1 || r2 || r3 || r4) && (
+			isTPTerm(p1.getSubPath())
+			|| isTPChoice(p1.getSubPath())
+		);
+	}
+
+	private static boolean isTPTerm(Path path) {
+		return path instanceof P_Path0 ||
+			path instanceof P_NegPropSet;
 	}
 }

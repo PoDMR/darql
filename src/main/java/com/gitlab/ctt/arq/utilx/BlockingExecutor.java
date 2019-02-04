@@ -42,5 +42,9 @@ public class BlockingExecutor extends ThreadPoolExecutor {
 	protected void afterExecute(final Runnable r, final Throwable t) {
 		super.afterExecute(r, t);
 		semaphore.release();
+		if (t != null) {
+			LOGGER.error("uncaught in executor", t);
+
+		}
 	}
 }

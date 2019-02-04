@@ -3,6 +3,7 @@ package com.gitlab.ctt.arq.analysis.aspect;
 import com.gitlab.ctt.arq.analysis.FileOutput;
 import com.gitlab.ctt.arq.analysis.Job;
 import com.gitlab.ctt.arq.analysis.support.ConsumePathVisitor;
+import com.gitlab.ctt.arq.core.format.LineDelimFormat;
 import com.gitlab.ctt.arq.sparql.ElementDeepWalker;
 import fj.data.Either;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -28,6 +29,10 @@ public class PathExtractor implements Job<Either<Exception, Query>, Void> {
 	private PrintWriter writer;
 	private AtomicLong counter = new AtomicLong();
 
+	private final boolean doFullOutput = true;
+	private FileOutput fileOutput2;
+	private PrintWriter writer2;
+
 	@Override
 	public void setTag(String tag) {
 		this.tag = tag;  
@@ -37,6 +42,10 @@ public class PathExtractor implements Job<Either<Exception, Query>, Void> {
 	public void init() {
 		fileOutput = FileOutput.from(tag, BASENAME);
 		writer = fileOutput.getWriter();
+		if (doFullOutput) {
+			fileOutput2 = FileOutput.from(tag, "pp_sparql.txt");
+			writer2 = fileOutput2.getWriter();
+		}
 	}
 
 	@Override
@@ -45,17 +54,24 @@ public class PathExtractor implements Job<Either<Exception, Query>, Void> {
 			Query query = maybeQuery.right().value();
 			Element element = query.getQueryPattern();
 			if (element != null) {
-				handleElement(element);
+				handleElement(element, query);
 			}
 		}
 		return null;
 	}
 
-	private synchronized void handleElement(Element element) {
+	private synchronized void handleElement(Element element, Query query) {
 		MutableBoolean nonEmpty = new MutableBoolean(false);
 		PathVisitor pathVisitor = new ConsumePathVisitor(path -> {
-			handlePath(nonEmpty, path);
+			handlePath(nonEmpty, path, query);
 		});
+		walkPath(element, pathVisitor);
+		if (nonEmpty.isTrue()) {
+			writer.println();
+		}
+	}
+
+	public static void walkPath(Element element, PathVisitor pathVisitor) {
 		ElementDeepWalker.walk(element, new ElementVisitorBase() {
 			@Override
 			public void visit(ElementPathBlock el) {
@@ -67,14 +83,18 @@ public class PathExtractor implements Job<Either<Exception, Query>, Void> {
 				});
 			}
 		});
-		if (nonEmpty.isTrue()) {
-			writer.println();
-		}
 	}
 
-	private void handlePath(MutableBoolean nonEmpty, Path path) {
+	private void handlePath(MutableBoolean nonEmpty, Path path, Query query) {
 		counter.getAndIncrement();
 		writer.println(path.toString());
+		if (doFullOutput) {
+			try {
+				writer2.println(query.toString());
+				writer2.println(LineDelimFormat.HASH_DELIM);
+			} catch (Throwable ignored) {
+			}
+		}
 		nonEmpty.setTrue();
 	}
 
@@ -83,6 +103,9 @@ public class PathExtractor implements Job<Either<Exception, Query>, Void> {
 		if (fileOutput != null) {
 			LOGGER.debug("Number of extracted expressions: {}", counter);
 			fileOutput.commit();
+			if (doFullOutput) {
+				fileOutput2.commit();
+			}
 		}
 		fileOutput = null;
 	}

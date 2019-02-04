@@ -6,6 +6,9 @@ public class LineItem {
 	public long num;
 	public String origin;
 
+
+
+
 	public LineItem(String lineStr, long ti, String origin) {
 		this.lineStr = lineStr;
 		this.origin = origin;

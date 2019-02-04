@@ -11,8 +11,7 @@ import java.util.ArrayDeque;
 
 public class TNodeBuilderFormat {
 	public static Either<Exception, TNode<String>> build(InputStream inputStream) {
-		try {
-			InputStreamReader isr = new InputStreamReader(inputStream);
+		try (InputStreamReader isr = new InputStreamReader(inputStream)) {
 			BufferedReader br = new BufferedReader(isr);
 			TNodeBuilderFormat builder = new TNodeBuilderFormat();
 			String line = br.readLine();

@@ -14,6 +14,8 @@ import org.apache.jena.sparql.syntax.*;
 
 import java.util.*;
 
+import static com.gitlab.ctt.arq.sparql.SparqlGraph.exprWalkerWalk;
+
 public class SparqlAlgorithms {
 	public static void main(String[] args) {
 		String sparqlStr = Resources.getResourceAsString("sample/misc/scrap.sparql");
@@ -69,6 +71,17 @@ public class SparqlAlgorithms {
 		return set;
 	}
 
+	public static Set<TriplePath> collectTriplesWithService(Element element) {
+		Set<TriplePath> set = new HashSet<>();
+		ElementDeepWalker.walkWithService(element, new ElementVisitorBase() {
+			@Override
+			public void visit(ElementPathBlock el) {
+				el.patternElts().forEachRemaining(set::add);
+			}
+		});
+		return set;
+	}
+
 	public static boolean isConjunctive(ElementGroup elg) {
 		HashSet<Class<? extends Element>> classes = new HashSet<>(Arrays.asList(
 			ElementPathBlock.class,
@@ -102,7 +115,7 @@ public class SparqlAlgorithms {
 			@Override
 			public void visit(ElementFilter filter) {
 				Expr expr = filter.getExpr();
-				ExprWalker.walk(new ExprVisitorBase() {
+				exprWalkerWalk(new ExprVisitorBase() {
 					@Override
 					public void visit(ExprFunctionN func) {
 						if (func instanceof E_Regex) {

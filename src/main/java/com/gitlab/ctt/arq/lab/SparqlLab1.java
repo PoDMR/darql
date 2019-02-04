@@ -3,6 +3,7 @@ package com.gitlab.ctt.arq.lab;
 import com.gitlab.ctt.arq.sparql.ElementDeepWalker;
 import com.gitlab.ctt.arq.util.QueryFixer;
 import com.gitlab.ctt.arq.util.SparqlUtil;
+import com.gitlab.ctt.arq.utilx.Resources;
 import fj.data.Either;
 import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryFactory;
@@ -16,7 +17,9 @@ public class SparqlLab1 {
 	}
 
 	private static void test2() {
-		String queryStr = "SELECT ?x WHERE { ?x ?x ?x }";
+
+
+		String queryStr = Resources.getResourceAsString("sample/misc/scrap.sparql");
 		String queryStr2 = QueryFixer.get().fix(queryStr);
 		Either<Exception, Query> maybeQuery = SparqlUtil.get().toQuery(queryStr2);
 		Query query = maybeQuery.right().value();

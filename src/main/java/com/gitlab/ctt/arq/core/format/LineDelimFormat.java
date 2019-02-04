@@ -19,12 +19,27 @@ public class LineDelimFormat {
 	}
 
 	public void acceptLine(LineItem line) {
-		if (line.lineStr.startsWith(delim)) {
+		if (testLine(line)) {
 			flush(line);
 		} else {
 			sb.append(line.lineStr);
 			sb.append("\n");
 		}
+	}
+
+
+	@SuppressWarnings("RedundantIfStatement")
+	private boolean testLine(LineItem line) {
+		boolean startsWith = line.lineStr.startsWith(delim);
+		if (!startsWith) {
+			return false;
+		}
+
+
+
+
+
+		return true;
 	}
 
 

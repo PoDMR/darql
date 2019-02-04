@@ -1,3 +1,4 @@
+#### JOB_NAME
 input:
   - key: uniq
     src:
@@ -19,7 +20,14 @@ input:
       dbpedia_14/uniq_sparql.log
       dbpedia_15/uniq_sparql.log
       dbpedia_16/uniq_sparql.log
+      dbpedia_17/uniq_sparql.log
       wikidata/wikidata_examples.txt
+  - key: uniq17
+    src:
+      - host: khan
+        dir: /data/khan/arq/output/uniq
+    filter: |-
+      dbpedia_17/uniq_sparql.log
   - key: raw
     src:
       - host: khan
@@ -72,6 +80,7 @@ input:
       dbpedia_14/2014-01-07_usewod15.log
       dbpedia_15/2015-10-31_usewod16.log
       dbpedia_16/2016-02-12_angela16.log
+      dbpedia_17/dbpedia-2016-04/access.log-20170626
   - key: raw_mod
     src:
       - host: khan
@@ -82,6 +91,7 @@ input:
       dbpedia_14/.*
       dbpedia_15/.*
       dbpedia_16/.*
+      dbpedia_17/.*
       lgd_uw13/.*
       lgd_uw14/.*
       bioportal_uw13/.*sparql.*
@@ -89,12 +99,35 @@ input:
       biomed_uw13/.*sparql.*
       swdf_uw13/.*
       RKBE_tsv/.*
+      wikidata/wikidata_examples.txt
+  - key: raw_mod17
+    src:
+      - host: khan
+        dir: /data/khan/arq/input3
+    filter: |-
+      dbpedia_17/dbpedia-2016-.*/access.log-.*
   - key: wikidata
     src:
       - host: p8p67
-        dir: 'D:\home\rdata\wphd\arq\17-04\17-04-25\wikidata'
+        dir: 'D:\home\rdata\wphd\arq\_17\17-04\17-04-25\wikidata'
     filter: |-
       4_wikidata_mod2.txt
+  - key: wikidata_original
+    src:
+    - host: khan
+      dir: '/data/khan/arq/input3/wikidata_original'
+    - host: p8p67
+      dir: 'D:\home\rdata\wphd\arq\_17\17-02\17-02-07\wikidata'
+    filter: |-
+      2_wikidata_examples_prefixed.txt
+  - key: wikidata_nomod
+    src:
+    - host: khan
+      dir: '/data/khan/arq/input3/wikidata_pure'
+    - host: p8p67
+      dir: 'd:\home\rdata\wphd\arq\18-10\files'
+    filter: |-
+      wikidata_ex.txt
   - key: streaks_test
     src:
       - host: p8p67
@@ -106,6 +139,83 @@ input:
       	usewod-2015/usewod-2015-dbpedia-3.9.tar
       #		usewod-2015-dbpedia-3.9/access.log-\d*.gz
       		usewod-2015-dbpedia-3.9/access.log-20140107.gz
+################################################################################
+  - key: wd17_raw_organic
+    src:
+      - host: khan
+        dir: /data/khan/wd/wd_logs
+    filter: |-
+      raw/2017-..-.._2017....../.*_organic.tsv
+#      raw/2017-..-.._2017....../.*_organic_grep.tsv
+  - key: wd17_raw_organic_grep
+    src:
+    - host: khan
+      dir: /data/khan/wd/wd_logs
+    filter: |-
+      raw/2017-..-.._2017....../.*_organic_grep.tsv
+  - key: wd17_raw_robotic
+    src:
+    - host: khan
+      dir: /data/khan/wd/wd_logs
+    filter: |-
+      raw/2017-..-.._2017....../.*_robotic.tsv
+  - key: wd17_raw_organic_500
+    src:
+    - host: khan
+      dir: /data/khan/wd/wd_logs
+    filter: |-
+      raw/2017-..-.._2017....../.*_organic_500.tsv
+  - key: wd17_raw_robotic_500
+    src:
+    - host: khan
+      dir: /data/khan/wd/wd_logs
+    filter: |-
+      raw/2017-..-.._2017....../.*_robotic_500.tsv
+  - key: wd17_dedup_organic
+    src:
+    - host: khan
+      dir: /data/khan/wd/wd_logs
+    filter: |-
+      dedup/organic/uniq_sparql.log
+  - key: wd17_dedup_organic_grep
+    src:
+    - host: khan
+      dir: /data/khan/wd/wd_logs
+    filter: |-
+      dedup/organic_grep/uniq_sparql.log
+  - key: wd17_dedup_robotic
+    src:
+    - host: khan
+      dir: /data/khan/wd/wd_logs
+    filter: |-
+      dedup/robotic/uniq_sparql.log
+  - key: wd17_dedup_organic_500
+    src:
+    - host: khan
+      dir: /data/khan/wd/wd_logs
+    filter: |-
+      dedup/organic_500/uniq_sparql.log
+  - key: wd17_dedup_robotic_500
+    src:
+    - host: khan
+      dir: /data/khan/wd/wd_logs
+    filter: |-
+      dedup/robotic_500/uniq_sparql.log
+  - key: wd17_raw # split by date, not type
+    src:
+    - host: khan
+      dir: /data/khan/wd/wd_logs/raw
+    filter: |-
+      2017-..-.._2017....../.*_organic.tsv
+      2017-..-.._2017....../.*_robotic.tsv
+  - key: wd17_dedup
+    src:
+    - host: khan
+      dir: /data/khan/wd/wd_logs/dedup
+    filter: |-
+      organic/uniq_sparql.log
+      robotic/uniq_sparql.log
+################################################################################
   - key: streaks_mini
     src:
       - host: p8p67
@@ -137,14 +247,17 @@ input:
       ##swdf_uw13/.*
       wikidata/wikidata_examples.txt
 #handlers:
-#  - pattern: .*(RKB-Explorer|tsv|TSV).*
+#  - pattern: .*(RKB-Explorer|tsv/|TSV/).*
 #    handler: tsvHandler
+#  - pattern: .*tsv
+#    handler: wikiTsvHandler
 #  - pattern: .*(sparql|SPARQL|wikidata).*
 #    handler: delimHandlerHash
 #  - pattern: .*(biomed/|hash|HASH).*
 #    handler: delimHandlerDash
 #  - pattern: .*
 #    handler: clfHandler
+#### JOB_SET
 job_sets:
   - name: default
     jobs:  # FileDispatcher
@@ -156,12 +269,22 @@ job_sets:
     #### shapeAnalysis: analyzeAllShapes checkCycles checkEdgeCover countTriples
     - propertyCounter
     #- optAnalysis
+    #- uriCounter
     - opDistribution2
     - opDistribution
     #- streakAnalysis
+  - name: uri_count
+    jobs:
+    - uriCounter
   - name: streak_analysis
     jobs:
       - streakAnalysis
+  - name: search
+    jobs:
+    - similaritySearch
   - name: db_fill
     jobs:
       - databaseFiller2
+  - name: dedup
+    jobs:
+      - deduplicator

@@ -83,7 +83,7 @@ public class DatabaseFiller2 extends BaseDeduplicator {
 
 	@Override
 	public void commit() {
-		if (useStats) {
+		if (useStats && db.getHandle() != null) {
 
 			db.getHandle().execute("INSERT INTO \"OriginStats\" (\"originMajor\", nodupe, dupe, valid)\n" +
 				"    SELECT t.\"originMajor\", nodupe, dupe, valid\n" +
@@ -106,7 +106,9 @@ public class DatabaseFiller2 extends BaseDeduplicator {
 				"valid = EXCLUDED.valid;");
 		}
 
-		db.close();
+		if (db.getHandle() != null) {
+			db.close();
+		}
 
 
 	}

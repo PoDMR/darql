@@ -132,7 +132,7 @@ public class PatternTree {
 			ElementPathBlock pathBlock = (ElementPathBlock) element;
 			return new Basic1(SparqlAlgorithms.tripleVars(pathBlock));
 		}
-		return null;  
+		return EMPTY_PATTERN;  
 	}
 
 	private static Pattern handleGroup(ElementGroup group) {
@@ -141,6 +141,7 @@ public class PatternTree {
 			.collect(Collectors.toCollection(ArrayList::new));
 		int n = children.size();
 		if (n > 0) {
+			children = order(children);
 			Pattern p = children.get(0);
 			if (p instanceof Opt2) {
 				Opt2 opt2 = (Opt2) p;
@@ -175,5 +176,20 @@ public class PatternTree {
 		} else {
 			return EMPTY_PATTERN;
 		}
+	}
+
+
+	private static ArrayList<Pattern> order(ArrayList<Pattern> children) {
+		ArrayList<Pattern> cList = new ArrayList<>();
+		ArrayList<Pattern> oList = new ArrayList<>();
+		for (Pattern p : children) {
+			if (!(p instanceof Opt2)) {
+				cList.add(p);
+			} else {
+				oList.add(p);
+			}
+		}
+		cList.addAll(oList);
+		return cList;
 	}
 }

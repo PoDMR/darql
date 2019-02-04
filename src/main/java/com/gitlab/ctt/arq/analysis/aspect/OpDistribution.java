@@ -8,6 +8,7 @@ import com.gitlab.ctt.arq.util.SparqlUtil;
 import com.gitlab.ctt.arq.utilx.Resources;
 import fj.data.Either;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.jena.ext.com.google.common.collect.ImmutableMap;
 import org.apache.jena.query.Query;
 import org.apache.jena.sparql.syntax.Element;
 import org.yaml.snakeyaml.DumperOptions;
@@ -23,16 +24,27 @@ public class OpDistribution implements Job<Either<Exception, Query>, Void> {
 	public static void main(String[] args) {
 		String sparqlStr = Resources.getResourceAsString("sample/misc/scrap.sparql");
 		Either<Exception, Query> mQuery = SparqlUtil.get().toQuery(sparqlStr);
-		OpDistribution op = new OpDistribution();
+		OpDistribution op = new OpDistribution(false);
 		op.init();
 		op.apply(mQuery);
-		Map<String, Integer> map = op.transformMap();
-		System.out.println(map);
+		Map<String, Integer> name2count = op.transformMap();
+		System.out.println(name2count);
 	}
 
 	private static final String BASENAME = "op_distribution.yaml";
 	private static final String BASENAME2 = "op_distribution_sa.yaml";
-	protected Map<Integer, Integer> map;
+	private static final Map<Integer, String> mask2name =
+		ImmutableMap.<Integer, String>builder()
+			.put(0b1 << (FlagWalker.AND - 1), "AND")
+			.put(0b1 << (FlagWalker.OPTIONAL - 1), "OPTIONAL")
+			.put(0b1 << (FlagWalker.UNION - 1), "UNION")
+			.put(0b1 << (FlagWalker.FILTER - 1), "FILTER")
+			.put(0b1 << (FlagWalker.GRAPH - 1), "GRAPH")
+			.put(0b1 << (FlagWalker.DATA - 1), "DATA")
+			.build();
+	private static int mask = mask2name.keySet().stream().reduce(0, (x, y) -> x | y);
+
+	protected Map<Integer, Integer> bitset2count;
 	private String tag;
 	private boolean onlySelectAsk;
 
@@ -46,7 +58,7 @@ public class OpDistribution implements Job<Either<Exception, Query>, Void> {
 
 	@Override
 	public void init() {
-		map = new TreeMap<>();
+		bitset2count = new TreeMap<>();
 	}
 
 	@Override
@@ -64,7 +76,8 @@ public class OpDistribution implements Job<Either<Exception, Query>, Void> {
 			Query query = maybeQuery.right().value();
 			Element element = query.getQueryPattern();
 			if (element != null) {
-				boolean onlySA = !onlySelectAsk || (query.isAskType() || query.isSelectType());
+				boolean onlySA = !onlySelectAsk ||
+					(query.isAskType() || query.isSelectType() || query.isConstructType());
 				if (onlySA) {
 					if (!SparqlProperties.get().hasPath(element)) {
 						accept(element);
@@ -79,7 +92,7 @@ public class OpDistribution implements Job<Either<Exception, Query>, Void> {
 
 	@Override
 	public void commit() {
-		if (map != null) {
+		if (bitset2count != null) {
 			String outputDirName = Resources.getLocalProperty("arq.out.dir");
 			File parent = tag != null ? new File(outputDirName, tag) : new File(outputDirName);
 			File file = new File(parent, getBasename());
@@ -92,30 +105,38 @@ public class OpDistribution implements Job<Either<Exception, Query>, Void> {
 			yaml.dump(transformMap(), writer);
 			fileOutput.commit();  
 		}
-		map = null;
+		bitset2count = null;
 	}
 
 	private Map<String, Integer> transformMap() {
 		Map<String, Integer> result = new LinkedHashMap<>();
-		for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
+		for (Map.Entry<Integer, Integer> entry : bitset2count.entrySet()) {
 			int bitset = entry.getKey();
-			if (bitset <= 0b11111) {
-				String label = "";
-				if ((bitset & 0b00001) != 0) {
-					label += ",AND";
-				}
-				if ((bitset & 0b00100) != 0) {
-					label += ",OPT";
-				}
-				if ((bitset & 0b00010) != 0) {
-					label += ",UNION";
-				}
-				if ((bitset & 0b01000) != 0) {
-					label += ",FILTER";
-				}
-				if ((bitset & 0b10000) != 0) {
-					label += ",GRAPH";
-				}
+
+			if ((bitset & ~mask) == 0) {
+				StringBuilder labelBuilder = new StringBuilder();
+				mask2name.forEach((k, v) -> {
+					if ((bitset & k) != 0) {
+						labelBuilder.append(",").append(v);
+					}
+				});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				String label = labelBuilder.toString();
 				if (StringUtils.isEmpty(label)) {
 					label = "none";
 				} else {
@@ -143,10 +164,10 @@ public class OpDistribution implements Job<Either<Exception, Query>, Void> {
 	}
 
 	private synchronized void increment(int bitset) {
-		Integer val = map.get(bitset);
+		Integer val = bitset2count.get(bitset);
 		if (val == null) {
 			val = 0;
 		}
-		map.put(bitset, val + 1);
+		bitset2count.put(bitset, val + 1);
 	}
 }

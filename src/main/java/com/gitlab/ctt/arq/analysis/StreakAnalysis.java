@@ -1,5 +1,6 @@
 package com.gitlab.ctt.arq.analysis;
 
+import com.gitlab.ctt.arq.analysis.aspect.db.QueryRecord;
 import com.gitlab.ctt.arq.analysis.aspect.util.FlagWalker;
 import com.gitlab.ctt.arq.sparql.SparqlAlgorithms;
 import com.gitlab.ctt.arq.sparql.SparqlGraph;
@@ -26,13 +27,15 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
 import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class StreakAnalysis  implements Job<Either<Exception, Query>, Void> {
+public class StreakAnalysis<T> implements Job<Either<Exception, Query>, Void> {
 	public static void main(String[] args) {
-		StreakAnalysis sa = new StreakAnalysis(5, 0.75d);
+		StreakAnalysis<String> sa = StreakAnalysis.stringStreakAnalysis(5, 0.75d);
 		sa.init();
 		sa.accept("SELECT * WHERE { ?x a ?y }", 0);
 		sa.accept("SELECT * WHERE { ?x a ?z }", 1);
@@ -40,14 +43,14 @@ public class StreakAnalysis  implements Job<Either<Exception, Query>, Void> {
 		sa.flushRest();
 	}
 
-	public static class Streak {
-		public String tail;
+	public static class Streak<T> {
+		public T tail;
 		public int size;
 		public double wSize;
 		public int number;
-		public List<String> series;
+		public List<T> series;
 
-		public Streak(String tail, int size, double wSize, int number, boolean storeFullStreaks) {
+		public Streak(T tail, int size, double wSize, int number, boolean storeFullStreaks) {
 			this.tail = tail;
 			this.size = size;
 			this.wSize = wSize;
@@ -60,7 +63,7 @@ public class StreakAnalysis  implements Job<Either<Exception, Query>, Void> {
 
 		@Override
 		public String toString() {
-			return tail;
+			return tail.toString();
 		}
 	}
 
@@ -84,16 +87,35 @@ public class StreakAnalysis  implements Job<Either<Exception, Query>, Void> {
 	private static final String SHAPE_BRANCHING = "b";
 	private static final String SHAPE_LINEAR = "s";
 
+
 	public static double compare(String str1, String str2) {
 		int distance = StringUtils.getLevenshteinDistance(str1, str2);
 		int maxLen = Math.max(str1.length(), str2.length());
 		return (maxLen - distance) * 1.d / maxLen;
 	}
 
+	public static String stringPreprocess(String string) {
+		return PREFIX_PATTERN.matcher(string).replaceAll("");
+	}
+
+
+	public static String queryToString(Either<Exception, Query> maybeQuery) {
+		return maybeQuery.right().value().toString();
+	}
+
+	public static Either<Exception, Query> extractQuery(String sparqlStr) {
+		String sparqlStr2 = QueryFixer.get().fix(sparqlStr);
+		return SparqlUtil.get().toQuery(sparqlStr2);
+	}
+
 	private int bufferSize;
 	private double threshold;
+	private BiFunction<T, T, Double> diffFunc;
+	private Function<T, T> stepTransform;
+	private Function<T, Either<Exception, Query>> queryExtract;
+	private Function<Either<Exception, Query>, T> queryAsInput;
 
-	private RingBuffer<Streak> items;
+	private RingBuffer<Streak<T>> items;
 	private Map<Integer, Integer> lenCount;
 	private Map<Double, Integer> wLenCount;
 	private String tag;
@@ -101,18 +123,38 @@ public class StreakAnalysis  implements Job<Either<Exception, Query>, Void> {
 	private final boolean extendedAnalysis = true;
 	private List<List<MetaRecord>> metaStreaks;
 
-	public StreakAnalysis(int bufferSize, double threshold) {
-		this.bufferSize = bufferSize;
-		this.threshold = threshold;
+	public static StreakAnalysis<String> stringStreakAnalysis(int bufferSize, double threshold) {
+		return new StreakAnalysis<>(bufferSize, threshold,
+			StreakAnalysis::compare,
+			StreakAnalysis::stringPreprocess,
+			StreakAnalysis::extractQuery,
+			StreakAnalysis::queryToString
+		);
+
 	}
 
-	public void accept(String string, long id) {
+	public StreakAnalysis(int bufferSize, double threshold,
+			BiFunction<T, T, Double> diffFunc,
+			Function<T, T> stepTransform,
+			Function<T, Either<Exception, Query>> queryExtract,
+			Function<Either<Exception, Query>, T> queryAsInput
+	) {
+		this.bufferSize = bufferSize;
+		this.threshold = threshold;
+		this.diffFunc = diffFunc;
+		this.stepTransform = stepTransform;
+		this.queryExtract = queryExtract;
+		this.queryAsInput = queryAsInput;
+	}
+
+
+	public void accept(T string, long id) {
 		for (int i = items.size() - 1; i >= 0; i--) {
 			if ((counter - items.get(i).number) >= bufferSize) {
 				flush(i);
 			}
 		}
-		String trimString = PREFIX_PATTERN.matcher(string).replaceAll("");
+		T trimString = stepTransform.apply(string);
 
 		List<Integer> matches = parallelMatch(trimString);
 		int hits = matches.size();
@@ -126,17 +168,17 @@ public class StreakAnalysis  implements Job<Either<Exception, Query>, Void> {
 			while (items.size() >= bufferSize) {
 				flush(0);
 			}
-			create(new Streak(trimString, 1, 1d, counter, extendedAnalysis));
+			create(new Streak<>(trimString, 1, 1d, counter, extendedAnalysis));
 		}
 		counter++;
 	}
 
 
-	private List<Integer> performMatch(String trimString) {
+	private List<Integer> performMatch(T trimString) {
 		List<Integer> matches = new ArrayList<>();
 		for (int i = 0; i < items.size(); i++) {
-			Streak other = items.get(i);
-			double score = compare(trimString, other.tail);
+			Streak<T> other = items.get(i);
+			double score = diffFunc.apply(trimString, other.tail);
 			if (score >= threshold) {
 				matches.add(i);
 			}
@@ -144,10 +186,10 @@ public class StreakAnalysis  implements Job<Either<Exception, Query>, Void> {
 		return matches;
 	}
 
-	private List<Integer> parallelMatch(String trimString) {
+	private List<Integer> parallelMatch(T trimString) {
 		return IntStream.range(0, items.size()).boxed().parallel().map(i -> {
-			Streak other = items.get(i);
-			double score = compare(trimString, other.tail);
+			Streak<T> other = items.get(i);
+			double score = diffFunc.apply(trimString, other.tail);
 			if (score >= threshold) {
 				return i;
 			}
@@ -155,11 +197,11 @@ public class StreakAnalysis  implements Job<Either<Exception, Query>, Void> {
 		}).filter(Objects::nonNull).sorted().collect(Collectors.toList());
 	}
 
-	private void create(Streak streak) {
+	private void create(Streak<T> streak) {
 		items.add(streak);
 	}
 
-	private void update(int i, String trimString, double w1) {
+	private void update(int i, T trimString, double w1) {
 		items.get(i).tail = trimString;
 		items.get(i).size++;
 		items.get(i).wSize += w1;
@@ -176,7 +218,7 @@ public class StreakAnalysis  implements Job<Either<Exception, Query>, Void> {
 	}
 
 	private void flush(int i) {
-		Streak streak = items.remove(0);
+		Streak<T> streak = items.remove(0);
 
 
 		lenCount.putIfAbsent(streak.size, 0);
@@ -188,10 +230,9 @@ public class StreakAnalysis  implements Job<Either<Exception, Query>, Void> {
 		}
 	}
 
-	private void extraAnalysis(Streak streak) {
+	private void extraAnalysis(Streak<T> streak) {
 		List<MetaRecord> metaStreak = streak.series.parallelStream().map(sparqlStr -> {
-			String sparqlStr2 = QueryFixer.get().fix(sparqlStr);
-			Either<Exception, Query> maybeQuery = SparqlUtil.get().toQuery(sparqlStr2);
+			Either<Exception, Query> maybeQuery = queryExtract.apply(sparqlStr);
 			if (maybeQuery.isRight()) {
 				Element element = maybeQuery.right().value().getQueryPattern();
 				if (element != null) {
@@ -278,7 +319,7 @@ public class StreakAnalysis  implements Job<Either<Exception, Query>, Void> {
 	@Override
 	public Void apply(Either<Exception, Query> maybeQuery) {
 		if (maybeQuery.isRight()) {
-			accept(maybeQuery.right().value().toString(), 0);
+			accept(queryAsInput.apply(maybeQuery), 0);
 		}
 		return null;
 	}

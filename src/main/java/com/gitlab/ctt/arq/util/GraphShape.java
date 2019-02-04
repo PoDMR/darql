@@ -1,5 +1,6 @@
 package com.gitlab.ctt.arq.util;
 
+import com.gitlab.ctt.arq.analysis.aspect.util.HyperTreeEval;
 import com.gitlab.ctt.arq.core.BatchProcessor.BailException;
 import com.gitlab.ctt.arq.sparql.SparqlGraph;
 import com.gitlab.ctt.arq.utilx.LabeledEdge;
@@ -11,6 +12,13 @@ import org.apache.jena.ext.com.google.common.collect.ImmutableSet;
 import org.apache.jena.ext.com.google.common.collect.Lists;
 import org.apache.jena.graph.Node_Variable;
 import org.apache.jena.query.Query;
+import org.apache.jena.sparql.ARQInternalErrorException;
+import org.apache.jena.sparql.algebra.OpVisitorBase;
+import org.apache.jena.sparql.algebra.walker.WalkerVisitor;
+import org.apache.jena.sparql.core.Var;
+import org.apache.jena.sparql.expr.Expr;
+import org.apache.jena.sparql.expr.ExprVar;
+import org.apache.jena.sparql.expr.ExprVisitorBase;
 import org.apache.jena.sparql.syntax.Element;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.Graph;
@@ -19,16 +27,14 @@ import org.jgrapht.alg.ConnectivityInspector;
 import org.jgrapht.alg.cycle.PatonCycleBase;
 import org.jgrapht.ext.DOTExporter;
 import org.jgrapht.ext.IntegerComponentNameProvider;
-import org.jgrapht.graph.AsUndirectedGraph;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedPseudograph;
-import org.jgrapht.graph.UndirectedSubgraph;
+import org.jgrapht.graph.*;
 import org.jgrapht.traverse.DepthFirstIterator;
 
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class GraphShape {
 	public static void main(String[] args) {
@@ -128,7 +134,7 @@ public class GraphShape {
 		return connectivity.isGraphConnected();
 	}
 
-	static <V, E> List<Set<V>> connectedSets(UndirectedGraph<V, E> ug) {
+	public static <V, E> List<Set<V>> connectedSets(UndirectedGraph<V, E> ug) {
 		ConnectivityInspector<V, E> connectivity = new ConnectivityInspector<>(ug);
 		return connectivity.connectedSets();
 	}
@@ -172,6 +178,50 @@ public class GraphShape {
 
 	public static <V, E> boolean isCycleTreeU(DirectedGraph<V, E> graph) {
 		return graph != null && isCycleTreeU(new AsUndirectedGraph<>(graph));
+	}
+
+	public static <V, E> int longestPath(UndirectedGraph<V, E> ug) {
+		List<Set<V>> cs = connectedSets(ug);
+		return cs.stream().mapToInt(c -> longestPathInTree(subGraph(ug, c))).max().orElse(0);
+	}
+
+	private static <V, E> int longestPathInTree(UndirectedGraph<V, E> ug) {
+		Optional<V> maybeV = ug.vertexSet().stream().findFirst();
+		if (maybeV.isPresent()) {
+			V v = maybeV.get();
+			Pair<V, Integer> p1 = farBfs(ug, v);
+			Pair<V, Integer> p2 = farBfs(ug, p1.getLeft());
+			return p2.getRight();
+		}
+		return 0;
+	}
+
+	private static <V, E> Pair<V, Integer> farBfs(UndirectedGraph<V, E> ug, V v1) {
+		Map<V, Integer> dist = new LinkedHashMap<>();
+		ArrayDeque<V> q = new ArrayDeque<>();
+		q.add(v1);
+		dist.put(v1, 0);
+		while (!q.isEmpty()) {
+			V v = q.pop();
+
+			for (E e : ug.edgesOf(v)) {
+				V w = ug.getEdgeTarget(e);
+				if (w.equals(v)) {
+					w = ug.getEdgeSource(e);
+				}
+				if (dist.get(w) == null) {
+					q.push(w);
+					dist.put(w, dist.get(v) + 1);
+				}
+			}
+		}
+		Pair<V, Integer> max = Pair.of(v1, 0);
+		for (Map.Entry<V, Integer> entry : dist.entrySet()) {
+			if (entry.getValue() > max.getRight()) {
+				max = Pair.of(entry.getKey(), entry.getValue());
+			}
+		}
+		return max;
 	}
 
 	private static <V, E> boolean isCycleTreeU(UndirectedGraph<V, E> graph) {
@@ -341,6 +391,64 @@ public class GraphShape {
 		});
 		UndirectedGraph<Object, DefaultEdge> ug = new AsUndirectedGraph<>(graphHE);
 		return isCyclic(ug);
+	}
+
+	
+	public static Either<Boolean, Integer> freeConnexAcyclic(
+		Query query,
+		DirectedGraph<Object, DefaultEdge> graph,
+		boolean regex
+	) {
+		List<Var> vars = getProjectionInput(query);
+		if (graph != null && vars.size() <= 2) {
+			if (vars.size() == 2) {
+
+				graph.addVertex(vars.get(0));
+				graph.addVertex(vars.get(1));
+				graph.addEdge(vars.get(0), vars.get(1));
+				UndirectedGraph<Object, DefaultEdge> ug = new AsUndirectedGraph<>(graph);
+				return Either.left(!isCyclic(ug));
+			} else {
+				return Either.left(true);
+			}
+		} else if (!regex) {
+			List<String> strings = vars
+				.stream().map(String::valueOf).collect(Collectors.toList());
+			int htw = HyperTreeEval.hyperTreeCheck(query, strings).getLeft();
+			return Either.right(htw);
+		} else {
+			return Either.right(0);
+		}
+	}
+
+	private static List<Var> getProjectionInput(Query query) {
+		try {
+			Map<Var, Expr> exprs = query.getProject().getExprs();
+			List<Var> projectVars = query.getProjectVars();
+			if (exprs != null && projectVars != null) {
+				return projectVars.stream().flatMap(v ->
+					exprs.get(v) != null ? getVars(exprs.get(v)).stream() : Stream.of(v)
+				).collect(Collectors.toList());
+			}
+		} catch (ARQInternalErrorException ignored) {
+		}
+		return Collections.emptyList();
+	}
+
+	private static Set<Var> getVars(Expr expr) {
+		Set<Var> vars = new LinkedHashSet<>();
+		ExprVisitorBase exprVisitor = new ExprVisitorBase() {
+			@Override
+			public void visit(ExprVar nv) {
+				super.visit(nv);
+				vars.add(nv.asVar());
+			}
+		};
+		WalkerVisitor walker = new WalkerVisitor(new OpVisitorBase(), exprVisitor,
+			new OpVisitorBase(), new OpVisitorBase());
+		walker.walk(expr);
+		return vars;
+
 	}
 
 	public static <V, E> String graphToViz(Graph<V, E> graph) {

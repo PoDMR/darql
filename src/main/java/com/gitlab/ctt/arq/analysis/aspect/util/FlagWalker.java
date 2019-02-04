@@ -14,6 +14,8 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 
+import static com.gitlab.ctt.arq.sparql.SparqlGraph.exprWalkerWalk;
+
 
 
 public class FlagWalker {
@@ -39,6 +41,22 @@ public class FlagWalker {
 	public MutableBoolean minus = new MutableBoolean();
 	public MutableBoolean data = new MutableBoolean();
 	public MutableBoolean dataset = new MutableBoolean();
+
+	public static final int AND = 1;
+	public static final int UNION = 2;
+	public static final int OPTIONAL = 3;
+	public static final int FILTER = 4;
+	public static final int GRAPH = 5;
+	public static final int SUBQUERY = 6;
+	public static final int EXISTS = 7;
+	public static final int NOTEXISTS = 8;
+	public static final int SERVICE = 9;
+	public static final int BIND = 10;
+	public static final int ASSIGN = 11;
+	public static final int MINUS = 12;
+	public static final int DATA = 13;
+	public static final int DATASET = 14;
+
 
 
 
@@ -114,7 +132,7 @@ public class FlagWalker {
 						}
 					}
 				};
-				ExprWalker.walk(visitor, expr);
+				exprWalkerWalk(visitor, expr);
 			}
 
 			@Override

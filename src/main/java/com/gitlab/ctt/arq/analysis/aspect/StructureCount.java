@@ -84,7 +84,7 @@ public class StructureCount {
 		boolean cpf = ((flagLong & ~9L) == 0);  
 		boolean afo = ((flagLong & ~13L) == 0); 
 		boolean afou = ((flagLong & ~0b1111) == 0); 
-		boolean selectOrAsk = query.isSelectType() || query.isAskType();
+		boolean selectOrAsk = query.isSelectType() || query.isAskType() || query.isConstructType();
 		afou = afou && selectOrAsk;
 		afo = afo && selectOrAsk;
 

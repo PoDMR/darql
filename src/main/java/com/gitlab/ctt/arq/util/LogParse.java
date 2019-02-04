@@ -54,7 +54,7 @@ public class LogParse {
 		}
 	}
 
-	private String queryFromRequest(String requestStr) {
+	public String queryFromRequest(String requestStr) {
 		List<NameValuePair> pairs = URLEncodedUtils.parse(requestStr,
 			StandardCharsets.UTF_8);
 		for (NameValuePair pair : pairs) {

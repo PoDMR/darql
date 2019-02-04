@@ -35,6 +35,10 @@ public class BatchProcessor {
 		public String toString() {
 			return Arrays.toString(context);
 		}
+
+		public Object[] getContext() {
+			return context;
+		}
 	}
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchProcessor.class);
@@ -46,34 +50,45 @@ public class BatchProcessor {
 		LOGGER.debug("Args: {}", Arrays.toString(args));
 		LOGGER.info("Start: {}", System.currentTimeMillis());
 		for (String arg : args) {
-			new BatchProcessor().processFromMasterFile(arg);
+			new BatchProcessor().processFromMasterFile(arg, true);
 		}
 		LOGGER.info("Stop: {}", System.currentTimeMillis());
 	}
 
-	private FileDispatcher consumer = new FileDispatcher();
+	public BatchProcessor() {
+		this(new FileDispatcher(), System.getenv("JOB_NAME"));
+	}
+
+	public BatchProcessor(FileDispatcher consumer, String defaultInputPattern) {
+		this.consumer = consumer;
+		this.defaultInputPattern = defaultInputPattern;
+	}
+
+	private FileDispatcher consumer;
+	private String defaultInputPattern;
 	private String batchTag = "batchTag";
 
-	public void processFromMasterFile(String masterFilename) {
+	public void processFromMasterFile(String masterFilename, boolean jobsFromConfig) {
 		File masterFile = new File(masterFilename);
 		String pwd = Resources.getLocalProperty("arq.pwd");
 		LOGGER.debug("pwd: {}", pwd);
 		File dir = new File(pwd);
 		try (InputStream fis = new FileInputStream(masterFile)) {
-			InputStream is = fis;
+			InputStream inputStream = fis;
 
 			if (masterFilename.endsWith(".yaml")) {
 				Yaml yaml = new Yaml();
 				Map<?, ?> config = yaml.loadAs(fis, Map.class);
 				List<?> input = (List<?>) config.get("input");
 				if (input != null) {
+					String inputPattern = this.defaultInputPattern;
+					inputPattern = inputPattern == null ? ".*" : inputPattern;
+					LOGGER.debug("{}: {}", "JOB_NAME", inputPattern);
 					for (Object itemObj : input) {
 						Map<?, ?> item = (Map<?, ?>) itemObj;
 						dir = null;
-						String inputPattern = System.getenv("JOB_NAME");
-						inputPattern = inputPattern == null ? ".*" : inputPattern;
 						if (item.get("key").toString().matches(inputPattern)) {
-							is = new ByteArrayInputStream(
+							inputStream = new ByteArrayInputStream(
 								item.get("filter").toString().getBytes());
 							List<?> srcs = (List<?>) item.get("src");
 							for (Object srcObj : srcs) {
@@ -114,6 +129,7 @@ public class BatchProcessor {
 				if (jobSets != null) {
 					String jobSetPattern = System.getenv("JOB_SET");
 					jobSetPattern = jobSetPattern == null ? "default" : jobSetPattern;
+					LOGGER.debug("{}: {}", "JOB_SET", jobSetPattern);
 					for (Object item : jobSets) {
 						Map<?, ?> map = (Map<?, ?>) item;
 						String name = map.get("name").toString();
@@ -123,13 +139,13 @@ public class BatchProcessor {
 						}
 					}
 				}
-				if (validJobs.size() > 0) {
+				if (validJobs.size() > 0 && jobsFromConfig) {
 					consumer.setValidJobs(validJobs.stream()
 						.map(Object::toString).collect(Collectors.toList()));
 				}
 			}
 
-			Either<Exception, TNode<String>> maybeNode = TNodeBuilderFormat.build(is);
+			Either<Exception, TNode<String>> maybeNode = TNodeBuilderFormat.build(inputStream);
 			if (maybeNode.isRight()) {
 				TNode<String> node = maybeNode.right().value();
 				processRootNode(dir, node);
@@ -141,10 +157,10 @@ public class BatchProcessor {
 
 	private void processRootNode(File dir, TNode<String> node) {
 		Vfs vfs = new LocalVfs(dir);
-		DateTime dt = DateTime.now();  // millis are always "relative" (unix epoch)
+		DateTime dt = DateTime.now();  
 		DateTimeFormatter dtf = DateTimeFormat.forPattern("yyMMddHHmmss");
 		batchTag = dt.withZone(DateTimeZone.UTC).toString(dtf);
-//		consumer.init();
+
 		try {
 			processNode(vfs, node, true);
 		} catch (BailException e) {
@@ -167,16 +183,16 @@ public class BatchProcessor {
 		}
 	}
 
-	// TODO: "commit" flush logic correctness for top-level wildcards
+
 	private void filterByNode(FileEntry vf, TNode<String> parent, boolean root) {
 		String name = vf.getName();
-//		LOGGER.debug("filter by path: {}", name);
-		// IF backing vfs supports seeking, leverage child order!
-//		LOGGER.debug("Filtering with: {}", parent.getChildren());
+
+
+
 		boolean prepared = false;
 		for (TNode<String> node : parent.getChildren()) {
 			String regex = node.getValue();
-//			LOGGER.trace("checking for pattern: {}", regex);
+
 			if (name.matches(regex)) {
 				if (!prepared) {
 					prepare(node, parent);
@@ -189,7 +205,7 @@ public class BatchProcessor {
 
 	private void filterByFileType(FileEntry vf, TNode<String> parent) {
 		String name = vf.getName();
-//		LOGGER.trace("filter by type: {}", name);
+
 		if (name.endsWith(".tar")) {
 			TarVfs tarVfs = new TarVfs(vf);
 			processNode(tarVfs, parent, false);
@@ -207,24 +223,19 @@ public class BatchProcessor {
 			} catch (IOException e) {
 				LOGGER.warn("Unhandled", e);
 			}
-		} else {  // no check?
-			// about threaded version:
-			// here, dispatch VF item to a thread pool worker
-			// for each VF item create a consumer with a different out file
-			// also, probably implementation only feasible for uncompressed VFS
+		} else {  
+
+
+
+
 			consumer.accept(vf);
 		}
 	}
 
-	/*
-	 IMPORTANT: handling of single top level root use, e.g.:
-	 uw_all/uniq_sparql.log  -> uw_all
-	 uw_all/uniq_sparql2.log -> uw_all => can wipe first log
-	 uw_all/uniq_sparql*.log -> also creates above situation
-	 */
+	
 	private void prepare(TNode<String> node, TNode<String> parent) {
 		if (batchTag != null && "/".equals(parent.getValue())) {
-			consumer.waitForAll();  // TODO we also need to reset here!
+			consumer.waitForAll();  
 			String nodeTag = node.getValue().replaceAll("/.*", "");
 			if (!nodeTag.equals(currentNodeTag)) {
 				currentNodeTag = nodeTag;

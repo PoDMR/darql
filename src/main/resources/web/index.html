@@ -203,7 +203,7 @@ summary {
 				<drop-zone ref="dropZone" class="max" :ondrop="onDrop">
 					<cytoscape ref="cyRef" id="cy" :oninit="initCy"></cytoscape>
 					<div class="actions" style="top: -100%">
-						<a href="javascript:" @click="nav_prev">&lt;&lt;</a>
+						<a href="javascript:void(0)" @click="nav_prev">&lt;&lt;</a>
 
 						<span>
 							<span data-tip="press ENTER to confirm goto">
@@ -212,26 +212,26 @@ summary {
 									@keyup.enter="nav_goto"
 									v-model="currentQueryIndexStr">
 							</span>/{{queryData.length}}</span>
-						<a href="javascript:" @click="nav_next">&gt;&gt;</a>
+						<a href="javascript:void(0)" @click="nav_next">&gt;&gt;</a>
 
-						<a href="javascript:"
+						<a href="javascript:void(0)"
 							@click="options.cy.invokeDownload()"
 						>save</a>
 						
 						
 						
-						<a href="javascript:"
+						<a href="javascript:void(0)"
 							@click="options.showEdgeLabels = !options.showEdgeLabels"
 							>showEdgeLabels: {{options.showEdgeLabels}}</a>
-						<a href="javascript:"
+						<a href="javascript:void(0)"
 							@click="options.showConstants = !options.showConstants"
 							>showConstants: {{options.showConstants}}</a>
-						<a href="javascript:"
+						<a href="javascript:void(0)"
 							@click="options.drawGraph = ((options.drawGraph == 'drawGraphHE') ?
 								'drawGraphReg' : 'drawGraphHE')"
 						>graph renderer: {{ (options.drawGraph == 'drawGraphHE') ?
 							'hypergraph' : 'regular' }}</a>
-						<a href="javascript:"
+						<a href="javascript:void(0)"
 							@click="sparqlGraph.nextLayout(1)"
 						>layout: {{ options.layout }}</a>
 					</div>
@@ -256,20 +256,20 @@ summary {
 					<vgl-component title="Query Builder"
 						style="display: flex; flex-direction: column;">
 						<div class="actions">
-							<a href="javascript:" @click="fillAndExecuteQuery">Run</a>
+							<a href="javascript:void(0)" @click="fillAndExecuteQuery">Run</a>
 							
-							<a href="javascript:" @click="performReset">Reset</a>
-							<a href="javascript:" @click="performCount"
+							<a href="javascript:void(0)" @click="performReset">Reset</a>
+							<a href="javascript:void(0)" @click="performCount"
 								:data-tip-persistent="countResult">Count</a>
 
 							<span>Limit</span>
 							<input id="limit" v-model="sqlBuild.limit"
 								size="2" title="Limit" value="10">
-							<a href="javascript:" @click="offsetPrev">&lt&lt</a>
+							<a href="javascript:void(0)" @click="offsetPrev">&lt&lt</a>
 							<span>Offset</span>
 							<input id="offset" v-model="sqlBuild.offset"
 									size="2" title="Offset" value="0">
-							<a href="javascript:" @click="offsetNext">&gt&gt</a>
+							<a href="javascript:void(0)" @click="offsetNext">&gt&gt</a>
 						</div>
 
 						<div style="overflow-y: auto; display: flex; flex-wrap: wrap;">

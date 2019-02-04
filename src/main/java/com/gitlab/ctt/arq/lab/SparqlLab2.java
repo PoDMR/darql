@@ -11,12 +11,13 @@ import org.apache.jena.sparql.core.Var;
 import org.apache.jena.sparql.expr.Expr;
 import org.apache.jena.sparql.expr.ExprFunction2;
 import org.apache.jena.sparql.expr.ExprVisitorBase;
-import org.apache.jena.sparql.expr.ExprWalker;
 import org.apache.jena.sparql.path.PathVisitorBase;
 import org.apache.jena.sparql.syntax.*;
 
 import java.util.Optional;
 import java.util.Set;
+
+import static com.gitlab.ctt.arq.sparql.SparqlGraph.exprWalkerWalk;
 
 public class SparqlLab2 {
 	public static final String SPARQL_STR = "PREFIX wd: <http://www.wikidata.org/entity/>\n" +
@@ -90,6 +91,6 @@ public class SparqlLab2 {
 				System.out.println(func);
 			}
 		};
-		ExprWalker.walk(visitor, expr);
+		exprWalkerWalk(visitor, expr);
 	}
 }
