@@ -1,0 +1,94 @@
+<head>
+	<!-- used: https://github.com/vasturiano/sunburst-chart -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.12.0/d3.min.js"></script>
+	<script src="https://unpkg.com/sunburst-chart"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	<script src="./data.js"></script>
+	<!--<script src="../../dist/sunburst-chart.js"></script>-->
+	<!--<script src="https://unpkg.com/saveSvgAsPng"></script>-->
+
+	<style>body { margin: 0 }</style>
+</head>
+<body>
+	<a href="javascript:save()">prepare for download</a><br>
+	<a href="#" id="link" download='sunburst'>save with right click</a><br>
+	requires <a href="sunburst.css">sunburst.css</a>
+	<div id="chart"></div>
+
+	<script>
+		const CHILDREN_PROB_DECAY = 0.15; // per level
+		const MAX_CHILDREN = 20;
+		const MAX_VALUE = 100;
+
+		function genNode(name='root', probOfChildren=1) {
+			if (Math.random() < probOfChildren) {
+				return {
+					name,
+					children: [...Array(Math.round(Math.random() * MAX_CHILDREN))]
+						.map((_, i) => genNode(i, probOfChildren - CHILDREN_PROB_DECAY))
+				}
+			} else {
+				return {
+					name,
+					value: Math.round(Math.random() * MAX_VALUE)
+				}
+			}
+		}
+
+		const color = d3.scaleOrdinal(d3.schemeCategory20);
+
+		String.prototype.hashCode = function() {
+			var hash = 0, i, chr;
+			if (this.length === 0) return hash;
+			for (i = 0; i < this.length; i++) {
+				chr = this.charCodeAt(i);
+				hash = ((hash << 5) - hash) + chr;
+				hash |= 0;
+			}
+			return hash;
+		};
+
+		var stringToColour = function(str) {
+			if (!str) return "#000000";
+			var hash = 0;
+			for (var i = 0; i < str.length; i++) {
+				hash = str.charCodeAt(i) + ((hash << 5) - hash);
+			}
+			var colour = '#';
+			for (var i = 0; i < 3; i++) {
+				var value = (hash >> (i * 8)) & 0xFF;
+				colour += ('00' + value.toString(16)).substr(-2);
+			}
+			return colour;
+		}
+
+		sunburst = Sunburst()
+//			.data(genNode())
+			.data(data)
+			.color(d => color(d.name))
+//			.color(d => d3.schemeCategory20[d.name.hashCode() % d3.schemeCategory20.length])
+//			.color(d => stringToColour(d.name))
+//			.minSliceAngle(.4)
+			.showLabels(true)
+			.tooltipContent((d, node) => `Size: <i>${node.value}</i>`)
+			.sort((b, a) => b.value - a.value)
+		(document.getElementById('chart'));
+
+		function save() {
+			var svg = document.getElementById("chart").childNodes[0].childNodes[0];
+			var serializer = new XMLSerializer();
+			var source = serializer.serializeToString(svg);
+			if(!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)){
+				source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+			}
+			if(!source.match(/^<svg[^>]+"http\:\/\/www\.w3\.org\/1999\/xlink"/)){
+				source = source.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
+			}
+			source = '<?xml version="1.0" standalone="no"?>\r\n' +
+				'<?xml-stylesheet href="sunburst.css" type="text/css"?>\r\n' +
+			 	source;
+			var url = "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(source);
+			document.getElementById("link").href = url;
+		}
+	</script>
+</body>
