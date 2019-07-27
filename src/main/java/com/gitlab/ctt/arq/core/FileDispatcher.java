@@ -1,7 +1,6 @@
 package com.gitlab.ctt.arq.core;
 
 import com.gitlab.ctt.arq.analysis.Job;
-import com.gitlab.ctt.arq.analysis.SimilaritySearch;
 import com.gitlab.ctt.arq.analysis.StreakAnalysis;
 import com.gitlab.ctt.arq.analysis.aspect.*;
 import com.gitlab.ctt.arq.analysis.aspect.db.DatabaseFiller2;
@@ -43,7 +42,6 @@ public class FileDispatcher implements Consumer<FileEntry> {
 	private UriCounter uriCounter = new UriCounter();
 	private StreakAnalysis<String> streakAnalysis = StreakAnalysis.stringStreakAnalysis(30, 0.75d);
 	private DatabaseFiller2 databaseFiller = new DatabaseFiller2();
-	private SimilaritySearch similaritySearch = new SimilaritySearch();
 
 	private List<Job<Either<Exception, Query>, ?>> jobs = new ArrayList<>(Arrays.asList(
 		pathExtractor,      
@@ -57,7 +55,6 @@ public class FileDispatcher implements Consumer<FileEntry> {
 		opDistribution      
 	));
 	private List<Job<QueryEntry, Boolean>> extJobs = new ArrayList<>(Arrays.asList(
-		similaritySearch,
 		deduplicator,       
 		databaseFiller
 	));
